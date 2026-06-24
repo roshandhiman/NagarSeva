@@ -115,31 +115,163 @@ export async function signUp(email, password, username) {
   
   // Create user profile in 'users' table
   if (data.user) {
-    const { error: profileError } = await supabase
-      .from('users')
-      .insert([{
-        user_id: data.user.id,
-        username: username,
-        points: 50,
-        badges: ['First Responder']
-      }]);
-    if (profileError) console.error("Error creating user profile:", profileError);
+    const profileData = {
+      user_id: data.user.id,
+      username: username,
+      points: 50,
+      badges: ['First Responder']
+    };
+    
+    try {
+      // Try including email in the profile insertion
+      const { error: profileError } = await supabase
+        .from('users')
+        .insert([{ ...profileData, email }]);
+        
+      if (profileError) {
+        // If the email column doesn't exist on public.users table, fallback to insert without email
+        if (profileError.message.includes('column') || profileError.code === '42703') {
+          console.warn("email column does not exist on users table, retrying insert without email");
+          const { error: fallbackError } = await supabase
+            .from('users')
+            .insert([profileData]);
+          if (fallbackError) console.error("Error creating user profile (fallback):", fallbackError);
+        } else {
+          console.error("Error creating user profile:", profileError);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to insert user profile:", e);
+    }
   }
   return data;
 }
 
-export async function signIn(email, password) {
-  if (email.toLowerCase() === 'admin' && password === 'admin') {
+export async function signIn(emailOrUsername, password) {
+  if (emailOrUsername.toLowerCase() === 'admin' && password === 'admin') {
     return { user: { id: 'admin', role: 'admin' } }; // Hardcoded admin for now
   }
   
   if (!useSupabase) throw new Error("Supabase is not configured.");
+  
+  let email = emailOrUsername;
+  
+  // If it's not a valid email format, assume it is a username and look up their email from the DB
+  if (!emailOrUsername.includes('@')) {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('email')
+        .eq('username', emailOrUsername)
+        .maybeSingle();
+        
+      if (data && data.email) {
+        email = data.email;
+      } else {
+        // If username exists but no email is stored, throw a specific message
+        const { data: userExists } = await supabase
+          .from('users')
+          .select('username')
+          .eq('username', emailOrUsername)
+          .maybeSingle();
+          
+        if (userExists) {
+          throw new Error(`Username login is not supported yet for your account because your email is not linked. Please sign in using your full email address.`);
+        } else {
+          throw new Error(`No account found with username or email "${emailOrUsername}".`);
+        }
+      }
+    } catch (err) {
+      console.error("Username email lookup failed:", err);
+      if (err.message.includes('column') || err.message.includes('does not exist')) {
+        throw new Error(`To log in with username, please use your email address, or run the SQL command: 'ALTER TABLE public.users ADD COLUMN email TEXT;' in your Supabase SQL editor.`);
+      }
+      throw err;
+    }
+  }
+  
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
   if (error) throw error;
   return data;
+}
+
+export async function ensureUserProfile(userId, email) {
+  if (!useSupabase) return null;
+  
+  // Check if profile exists
+  const { data: profile, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+    
+  if (error) {
+    console.error("Error fetching user profile in ensureUserProfile:", error);
+    return null;
+  }
+  
+  if (!profile) {
+    // Profile does not exist, create it!
+    const username = email ? email.split('@')[0] : 'citizen_' + Math.random().toString(36).substring(2, 7);
+    const profileData = {
+      user_id: userId,
+      username: username,
+      points: 50,
+      badges: ['First Responder']
+    };
+    
+    let createdProfile = null;
+    
+    try {
+      const { data: newProfile, error: createError } = await supabase
+        .from('users')
+        .insert([{ ...profileData, email }])
+        .select()
+        .single();
+        
+      if (createError) {
+        if (createError.message.includes('column') || createError.code === '42703') {
+          console.warn("email column does not exist on users table, retrying profile creation without email");
+          const { data: fallbackProfile, error: fallbackError } = await supabase
+            .from('users')
+            .insert([profileData])
+            .select()
+            .single();
+          if (!fallbackError) {
+            createdProfile = fallbackProfile;
+          } else {
+            console.error("Error creating user profile (fallback):", fallbackError);
+          }
+        } else {
+          console.error("Error creating user profile:", createError);
+        }
+      } else {
+        createdProfile = newProfile;
+      }
+    } catch (e) {
+      console.error("Failed to insert user profile in ensureUserProfile:", e);
+    }
+    
+    if (createdProfile) {
+      return {
+        userId: createdProfile.user_id,
+        username: createdProfile.username,
+        points: createdProfile.points,
+        badges: createdProfile.badges || []
+      };
+    }
+    return null;
+  }
+  
+  return {
+    userId: profile.user_id,
+    username: profile.username,
+    points: profile.points,
+    badges: profile.badges || []
+  };
 }
 
 export async function signInWithGoogle() {

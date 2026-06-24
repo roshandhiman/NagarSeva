@@ -1,7 +1,7 @@
 import './style.css';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { getUserProfile, getLeaderboard, getReports, submitReport, updateReportStatus, signIn, signUp, signOut, getCurrentSession, signInWithGoogle } from './api.js';
+import { getUserProfile, getLeaderboard, getReports, submitReport, updateReportStatus, signIn, signUp, signOut, getCurrentSession, signInWithGoogle, ensureUserProfile } from './api.js';
 import { initCursor } from './cursor.js';
 
 // Initialize custom cursor on this page
@@ -94,7 +94,7 @@ async function checkSession() {
     const supaSession = await getCurrentSession();
     if (supaSession) {
       // User is logged in via Supabase (e.g. Google OAuth redirect)
-      const profile = await getUserProfile(supaSession.user.id);
+      const profile = await ensureUserProfile(supaSession.user.id, supaSession.user.email);
       session = {
         userId: supaSession.user.id,
         username: profile?.username || supaSession.user.email.split('@')[0],
@@ -164,6 +164,8 @@ function setupAuthHandlers() {
       `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
   });
 
+
+
   // Login Form Submission
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -196,8 +198,8 @@ function setupAuthHandlers() {
 
       const authData = await signIn(email, pass);
       
-      // Get the user profile to get the username
-      const profile = await getUserProfile(authData.user.id);
+      // Ensure user profile exists in public.users table!
+      const profile = await ensureUserProfile(authData.user.id, authData.user.email);
       
       session = {
         userId: authData.user.id,
@@ -221,6 +223,7 @@ function setupAuthHandlers() {
   signupForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     signupError.style.display = 'none';
+    signupError.style.color = '#ef4444'; // Reset to red error color
 
     const username = document.getElementById('signup-username').value.trim();
     const email = document.getElementById('signup-email').value.trim();
@@ -244,6 +247,12 @@ function setupAuthHandlers() {
     try {
       const authData = await signUp(email, pass, username);
       
+      if (!authData.session) {
+        signupError.style.color = '#10b981'; // Green for success info
+        showError(signupError, "Account created! Please check your email to confirm registration before signing in. (You can also turn off 'Confirm email' under Auth -> Providers -> Email in your Supabase dashboard)");
+        return;
+      }
+      
       session = {
         userId: authData.user?.id || 'new_user',
         username: username,
@@ -261,21 +270,6 @@ function setupAuthHandlers() {
       submitBtn.disabled = false;
     }
   });
-
-  // Google Social Signin Mocks
-  const handleGoogleMock = () => {
-    session = {
-      userId: 'google_user',
-      username: 'Google Hero',
-      role: 'citizen'
-    };
-    seedUserInDB('Google Hero');
-    localStorage.setItem('ch_session', JSON.stringify(session));
-    window.location.reload();
-  };
-
-  btnLoginGoogle.addEventListener('click', handleGoogleMock);
-  btnSignupGoogle.addEventListener('click', handleGoogleMock);
 }
 
 function showError(el, msg) {
@@ -409,9 +403,10 @@ function initMap() {
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
 
-  if (session.role === 'citizen') {
-    locateUser(false);
+  // Automatically request and pan to current GPS location on load
+  locateUser(true);
 
+  if (session.role === 'citizen') {
     map.on('click', (e) => {
       const { lat, lng } = e.latlng;
       openReportModal(lat, lng);
