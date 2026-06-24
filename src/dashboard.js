@@ -1,7 +1,7 @@
 import './style.css';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { getUserProfile, getLeaderboard, getReports, submitReport, updateReportStatus, signIn, signUp, signOut, getCurrentSession } from './api.js';
+import { getUserProfile, getLeaderboard, getReports, submitReport, updateReportStatus, signIn, signUp, signOut, getCurrentSession, signInWithGoogle } from './api.js';
 import { initCursor } from './cursor.js';
 
 // Initialize custom cursor on this page
@@ -89,7 +89,27 @@ setupLoginCanvas();
    SESSION & INITIALIZATION
    ========================================================================= */
 
-function checkSession() {
+async function checkSession() {
+  try {
+    const supaSession = await getCurrentSession();
+    if (supaSession) {
+      // User is logged in via Supabase (e.g. Google OAuth redirect)
+      const profile = await getUserProfile(supaSession.user.id);
+      session = {
+        userId: supaSession.user.id,
+        username: profile?.username || supaSession.user.email.split('@')[0],
+        role: 'citizen'
+      };
+      localStorage.setItem('ch_session', JSON.stringify(session));
+      loginWrapper.style.display = 'none';
+      dashboardContainer.style.display = 'grid';
+      initDashboard();
+      return;
+    }
+  } catch (e) {
+    console.error("Session check failed", e);
+  }
+
   const storedSession = localStorage.getItem('ch_session');
   if (storedSession) {
     session = JSON.parse(storedSession);
@@ -703,11 +723,30 @@ function closeReportModal() {
   reportForm.reset();
 }
 
-/* =========================================================================
-   EVENT LISTENERS SETUP
-   ========================================================================= */
-
 function setupEventListeners() {
+  // Google Social Signin
+  if (btnLoginGoogle) {
+    btnLoginGoogle.addEventListener('click', async (e) => {
+      e.preventDefault();
+      try {
+        await signInWithGoogle();
+      } catch (error) {
+        showError(loginError, "Google login failed.");
+      }
+    });
+  }
+
+  if (btnSignupGoogle) {
+    btnSignupGoogle.addEventListener('click', async (e) => {
+      e.preventDefault();
+      try {
+        await signInWithGoogle();
+      } catch (error) {
+        showError(signupError, "Google signup failed.");
+      }
+    });
+  }
+
   // Logout Handler
   if (btnLogout) {
     btnLogout.addEventListener('click', async () => {
