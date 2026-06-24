@@ -1,39 +1,21 @@
-// Firebase configuration and Service Layer
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, query, where } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import { createClient } from '@supabase/supabase-js';
 
-// Default mock configuration or read from environment
-// User can replace this configuration with their own Firebase project settings.
-const firebaseConfig = {
-  apiKey: import.meta.env?.VITE_FIREBASE_API_KEY || "",
-  authDomain: import.meta.env?.VITE_FIREBASE_AUTH_DOMAIN || "",
-  projectId: import.meta.env?.VITE_FIREBASE_PROJECT_ID || "",
-  storageBucket: import.meta.env?.VITE_FIREBASE_STORAGE_BUCKET || "",
-  messagingSenderId: import.meta.env?.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
-  appId: import.meta.env?.VITE_FIREBASE_APP_ID || ""
-};
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 
-let db = null;
-let storage = null;
-let auth = null;
-let useFirebase = false;
+export let supabase = null;
+let useSupabase = false;
 
-// Check if valid credentials are provided
-if (firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.apiKey !== "YOUR_API_KEY") {
+if (supabaseUrl && supabaseAnonKey && supabaseUrl !== "YOUR_SUPABASE_URL") {
   try {
-    const app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
-    storage = getStorage(app);
-    auth = getAuth(app);
-    useFirebase = true;
-    console.log("Community Hero: Successfully connected to Firebase Backend.");
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
+    useSupabase = true;
+    console.log("Community Hero: Successfully connected to Supabase Backend.");
   } catch (e) {
-    console.error("Firebase init failed, switching to LocalMock storage.", e);
+    console.error("Supabase init failed, switching to LocalMock storage.", e);
   }
 } else {
-  console.log("Community Hero: Firebase configuration not set or empty. Using LocalStorage Mock Backend.");
+  console.log("Community Hero: Supabase configuration not set. Using LocalStorage Mock Backend.");
 }
 
 /* =========================================================================
@@ -119,21 +101,85 @@ export function getDistance(lat1, lon1, lat2, lon2) {
 }
 
 /* =========================================================================
+   AUTHENTICATION (Supabase Auth)
+   ========================================================================= */
+
+export async function signUp(email, password, username) {
+  if (!useSupabase) throw new Error("Supabase is not configured.");
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+  });
+  
+  if (error) throw error;
+  
+  // Create user profile in 'users' table
+  if (data.user) {
+    const { error: profileError } = await supabase
+      .from('users')
+      .insert([{
+        user_id: data.user.id,
+        username: username,
+        points: 50,
+        badges: ['First Responder']
+      }]);
+    if (profileError) console.error("Error creating user profile:", profileError);
+  }
+  return data;
+}
+
+export async function signIn(email, password) {
+  if (email.toLowerCase() === 'admin' && password === 'admin') {
+    return { user: { id: 'admin', role: 'admin' } }; // Hardcoded admin for now
+  }
+  
+  if (!useSupabase) throw new Error("Supabase is not configured.");
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function signOut() {
+  if (useSupabase) {
+    await supabase.auth.signOut();
+  }
+}
+
+export async function getCurrentSession() {
+  if (useSupabase) {
+    const { data } = await supabase.auth.getSession();
+    return data.session;
+  }
+  return null;
+}
+
+/* =========================================================================
    UNIFIED PUBLIC SERVICE API
    ========================================================================= */
 
 // Get current user profile (with points and badges)
 export async function getUserProfile(userId = 'current_user') {
-  if (useFirebase) {
-    // In Firebase, we can fetch from Firestore 'users' collection
+  if (useSupabase) {
     try {
-      const q = query(collection(db, 'users'), where('userId', '==', userId));
-      const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
-        return querySnapshot.docs[0].data();
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+      
+      if (data && !error) {
+        return {
+          userId: data.user_id,
+          username: data.username,
+          points: data.points,
+          badges: data.badges || []
+        };
       }
     } catch (e) {
-      console.error("Firebase getUserProfile failed, falling back to mock", e);
+      console.error("Supabase getUserProfile failed, falling back to mock", e);
     }
   }
   
@@ -144,14 +190,23 @@ export async function getUserProfile(userId = 'current_user') {
 
 // Get the top users sorted by points
 export async function getLeaderboard() {
-  if (useFirebase) {
+  if (useSupabase) {
     try {
-      const querySnapshot = await getDocs(collection(db, 'users'));
-      const list = [];
-      querySnapshot.forEach(doc => list.push(doc.data()));
-      return list.sort((a, b) => b.points - a.points);
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('points', { ascending: false });
+        
+      if (data && !error) {
+        return data.map(d => ({
+          userId: d.user_id,
+          username: d.username,
+          points: d.points,
+          badges: d.badges || []
+        }));
+      }
     } catch (e) {
-      console.error("Firebase getLeaderboard failed, falling back to mock", e);
+      console.error("Supabase getLeaderboard failed, falling back to mock", e);
     }
   }
 
@@ -162,16 +217,30 @@ export async function getLeaderboard() {
 
 // Fetch all reported incidents
 export async function getReports() {
-  if (useFirebase) {
+  if (useSupabase) {
     try {
-      const querySnapshot = await getDocs(collection(db, 'reports'));
-      const list = [];
-      querySnapshot.forEach(docSnap => {
-        list.push({ id: docSnap.id, ...docSnap.data() });
-      });
-      return list.sort((a, b) => b.timestamp - a.timestamp);
+      const { data, error } = await supabase
+        .from('reports')
+        .select('*')
+        .order('timestamp', { ascending: false });
+        
+      if (data && !error) {
+        return data.map(d => ({
+          id: d.id,
+          title: d.title,
+          type: d.type,
+          description: d.description,
+          latitude: d.latitude,
+          longitude: d.longitude,
+          photoUrl: d.photo_url,
+          status: d.status,
+          timestamp: d.timestamp,
+          userId: d.user_id,
+          username: d.username
+        }));
+      }
     } catch (e) {
-      console.error("Firebase getReports failed, falling back to mock", e);
+      console.error("Supabase getReports failed, falling back to mock", e);
     }
   }
 
@@ -202,13 +271,26 @@ export async function submitReport(reportData, imageFile = null) {
   let photoUrl = 'https://images.unsplash.com/photo-1584824486509-112e4181ff6b?auto=format&fit=crop&w=600&q=80'; // fallback
 
   if (imageFile) {
-    if (useFirebase && storage) {
+    if (useSupabase) {
       try {
-        const storageRef = ref(storage, `reports/${Date.now()}_${imageFile.name}`);
-        const snapshot = await uploadBytes(storageRef, imageFile);
-        photoUrl = await getDownloadURL(snapshot.ref);
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random()}.${fileExt}`;
+        const filePath = `reports/${fileName}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('community_hero_bucket')
+          .upload(filePath, imageFile);
+
+        if (!uploadError) {
+          const { data } = supabase.storage
+            .from('community_hero_bucket')
+            .getPublicUrl(filePath);
+          photoUrl = data.publicUrl;
+        } else {
+          photoUrl = await readAsDataURL(imageFile);
+        }
       } catch (e) {
-        console.error("Firebase storage upload failed, converting to dataURI", e);
+        console.error("Supabase storage upload failed, converting to dataURI", e);
         photoUrl = await readAsDataURL(imageFile);
       }
     } else {
@@ -222,46 +304,79 @@ export async function submitReport(reportData, imageFile = null) {
     description: reportData.description,
     latitude: parseFloat(reportData.latitude),
     longitude: parseFloat(reportData.longitude),
-    photoUrl: photoUrl,
+    photo_url: photoUrl,
     status: 'reported',
     timestamp: Date.now(),
-    userId: reportData.userId || 'current_user',
+    user_id: reportData.userId || 'current_user',
     username: reportData.username || 'You (Citizen Hero)'
   };
 
-  if (useFirebase && db) {
+  if (useSupabase) {
     try {
-      const docRef = await addDoc(collection(db, 'reports'), finalReport);
-      // Give points to user
-      await updateUserPoints(finalReport.userId, 50); // +50 points per report
-      return { id: docRef.id, ...finalReport };
+      const { data, error } = await supabase
+        .from('reports')
+        .insert([finalReport])
+        .select()
+        .single();
+        
+      if (data && !error) {
+        await updateUserPoints(finalReport.user_id, 50); // +50 points per report
+        return {
+          id: data.id,
+          title: data.title,
+          type: data.type,
+          description: data.description,
+          latitude: data.latitude,
+          longitude: data.longitude,
+          photoUrl: data.photo_url,
+          status: data.status,
+          timestamp: data.timestamp,
+          userId: data.user_id,
+          username: data.username
+        };
+      }
     } catch (e) {
-      console.error("Firebase submitReport failed, using local mock", e);
+      console.error("Supabase submitReport failed, using local mock", e);
     }
   }
 
   // Local storage mock fallback
   const reports = JSON.parse(localStorage.getItem('ch_reports'));
   const newId = `report_${Date.now()}`;
-  const savedReport = { id: newId, ...finalReport };
+  const savedReport = { 
+    id: newId, 
+    ...finalReport,
+    photoUrl: finalReport.photo_url,
+    userId: finalReport.user_id
+  };
   reports.push(savedReport);
   localStorage.setItem('ch_reports', JSON.stringify(reports));
 
   // Add points to user
-  await updateUserPoints(finalReport.userId, 50);
+  await updateUserPoints(finalReport.user_id, 50);
 
   return savedReport;
 }
 
 // Update report status (admin feature)
 export async function updateReportStatus(reportId, newStatus) {
-  if (useFirebase && db) {
+  if (useSupabase) {
     try {
-      const reportRef = doc(db, 'reports', reportId);
-      await updateDoc(reportRef, { status: newStatus });
-      return true;
+      const { data, error } = await supabase
+        .from('reports')
+        .update({ status: newStatus })
+        .eq('id', reportId)
+        .select()
+        .single();
+        
+      if (data && !error) {
+        if (newStatus === 'fixed') {
+          await updateUserPoints(data.user_id, 100);
+        }
+        return true;
+      }
     } catch (e) {
-      console.error("Firebase updateReportStatus failed, using local mock", e);
+      console.error("Supabase updateReportStatus failed, using local mock", e);
     }
   }
 
@@ -284,12 +399,29 @@ export async function updateReportStatus(reportId, newStatus) {
 
 // Helper to award points and calculate badge upgrades
 async function updateUserPoints(userId, pointsToAdd) {
-  if (useFirebase && db) {
+  if (useSupabase) {
     try {
-      // Fetch user doc, update points
-      // We will also update locally to sync
+      const { data: user } = await supabase
+        .from('users')
+        .select('points, badges')
+        .eq('user_id', userId)
+        .single();
+        
+      if (user) {
+        let newPoints = user.points + pointsToAdd;
+        let currentBadges = user.badges || [];
+        
+        if (newPoints >= 100 && !currentBadges.includes('Street Sentinel')) currentBadges.push('Street Sentinel');
+        if (newPoints >= 200 && !currentBadges.includes('Municipal Magnet')) currentBadges.push('Municipal Magnet');
+        if (newPoints >= 400 && !currentBadges.includes('Grand Architect')) currentBadges.push('Grand Architect');
+        
+        await supabase
+          .from('users')
+          .update({ points: newPoints, badges: currentBadges })
+          .eq('user_id', userId);
+      }
     } catch (e) {
-      console.error("Firebase points update failed", e);
+      console.error("Supabase points update failed", e);
     }
   }
 

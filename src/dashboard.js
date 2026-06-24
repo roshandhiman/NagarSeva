@@ -1,7 +1,7 @@
 import './style.css';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { getUserProfile, getLeaderboard, getReports, submitReport, updateReportStatus } from './firebase.js';
+import { getUserProfile, getLeaderboard, getReports, submitReport, updateReportStatus, signIn, signUp, signOut, getCurrentSession } from './api.js';
 import { initCursor } from './cursor.js';
 
 // Initialize custom cursor on this page
@@ -145,50 +145,60 @@ function setupAuthHandlers() {
   });
 
   // Login Form Submission
-  loginForm.addEventListener('submit', (e) => {
+  loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     loginError.style.display = 'none';
     
-    const username = document.getElementById('login-username').value.trim();
+    const email = document.getElementById('login-username').value.trim(); // Reusing the same input for email
     const pass = document.getElementById('login-password').value;
 
-    if (!username) {
-      showError(loginError, "Please enter a valid username or email.");
+    if (!email) {
+      showError(loginError, "Please enter a valid email.");
       return;
     }
+    
+    const submitBtn = loginForm.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Logging in...';
+    submitBtn.disabled = true;
 
-    // Role check
-    if (username.toLowerCase() === 'admin' && pass === 'admin') {
-      session = {
-        userId: 'admin',
-        username: 'Municipal Board',
-        role: 'admin'
-      };
-    } else {
-      // Citizen Login check
-      const users = JSON.parse(localStorage.getItem('ch_users') || '[]');
-      let user = users.find(u => u.username.toLowerCase() === username.toLowerCase() || u.userId === username);
-      
-      if (!user) {
-        // Fallback: seed username as a new citizen
-        user = { userId: 'user_' + Date.now(), username: username, points: 50, badges: ['First Responder'] };
-        users.push(user);
-        localStorage.setItem('ch_users', JSON.stringify(users));
+    try {
+      if (email.toLowerCase() === 'admin' && pass === 'admin') {
+        session = {
+          userId: 'admin',
+          username: 'Municipal Board',
+          role: 'admin'
+        };
+        localStorage.setItem('ch_session', JSON.stringify(session));
+        window.location.reload();
+        return;
       }
 
+      const authData = await signIn(email, pass);
+      
+      // Get the user profile to get the username
+      const profile = await getUserProfile(authData.user.id);
+      
       session = {
-        userId: user.userId,
-        username: user.username,
+        userId: authData.user.id,
+        username: profile?.username || email.split('@')[0],
         role: 'citizen'
       };
-    }
 
-    localStorage.setItem('ch_session', JSON.stringify(session));
-    window.location.reload();
+      localStorage.setItem('ch_session', JSON.stringify(session));
+      window.location.reload();
+      
+    } catch (error) {
+      console.error('Login error:', error);
+      showError(loginError, error.message || "Invalid credentials.");
+    } finally {
+      submitBtn.textContent = originalText;
+      submitBtn.disabled = false;
+    }
   });
 
   // Signup Form Submission (Create Account option)
-  signupForm.addEventListener('submit', (e) => {
+  signupForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     signupError.style.display = 'none';
 
@@ -200,33 +210,36 @@ function setupAuthHandlers() {
       showError(signupError, "Username 'admin' is reserved for municipal authority.");
       return;
     }
-
-    // Register user in mock DB
-    const users = JSON.parse(localStorage.getItem('ch_users') || '[]');
-    const exists = users.find(u => u.username.toLowerCase() === username.toLowerCase());
-    if (exists) {
-      showError(signupError, "Username already exists. Please choose another.");
+    
+    if (!email || !pass || pass.length < 6) {
+      showError(signupError, "Please provide a valid email and a password with at least 6 characters.");
       return;
     }
+    
+    const submitBtn = signupForm.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Creating Account...';
+    submitBtn.disabled = true;
 
-    const newUser = {
-      userId: 'user_' + Date.now(),
-      username: username,
-      email: email,
-      points: 50, // Welcome points
-      badges: ['First Responder']
-    };
-    users.push(newUser);
-    localStorage.setItem('ch_users', JSON.stringify(users));
+    try {
+      const authData = await signUp(email, pass, username);
+      
+      session = {
+        userId: authData.user?.id || 'new_user',
+        username: username,
+        role: 'citizen'
+      };
 
-    // Log user in
-    session = {
-      userId: newUser.userId,
-      username: newUser.username,
-      role: 'citizen'
-    };
-    localStorage.setItem('ch_session', JSON.stringify(session));
-    window.location.reload();
+      localStorage.setItem('ch_session', JSON.stringify(session));
+      window.location.reload();
+      
+    } catch (error) {
+      console.error('Signup error:', error);
+      showError(signupError, error.message || "Failed to create account.");
+    } finally {
+      submitBtn.textContent = originalText;
+      submitBtn.disabled = false;
+    }
   });
 
   // Google Social Signin Mocks
@@ -695,10 +708,14 @@ function closeReportModal() {
    ========================================================================= */
 
 function setupEventListeners() {
-  btnLogout.addEventListener('click', () => {
-    localStorage.removeItem('ch_session');
-    window.location.reload();
-  });
+  // Logout Handler
+  if (btnLogout) {
+    btnLogout.addEventListener('click', async () => {
+      await signOut();
+      localStorage.removeItem('ch_session');
+      window.location.reload();
+    });
+  }
 
   if (session.role === 'citizen') {
     btnQuickReport.addEventListener('click', () => openReportModal());
