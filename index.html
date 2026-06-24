@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Community Hero — Report Surrounding Issues & Help Your City</title>
+    <meta name="description" content="Report local potholes, garbage pile-ups, water leakages and track their resolution live. Earn badges, gain points, and climb the local leaderboard!" />
+  </head>
+  <body>
+    <!-- Custom Cursor Follower -->
+    <div class="cursor-follower" id="cursor-follower"></div>
+    <div class="cursor-dot" id="cursor-dot"></div>
+
+    <!-- Scroll Progress Bar -->
+    <div class="scroll-progress" id="scroll-progress"></div>
+
+    <!-- Particle Constellation Interactive Background -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- Floating Ambient Orbs (parallax layers) -->
+    <div class="ambient-orb orb-1" data-speed="0.02"></div>
+    <div class="ambient-orb orb-2" data-speed="0.04"></div>
+    <div class="ambient-orb orb-3" data-speed="0.03"></div>
+
+    <!-- Header Navigation -->
+    <header id="main-header">
+      <div class="nav-container">
+        <a href="/" class="logo">
+          <span>Community Hero<span style="color: var(--primary);">.</span></span>
+        </a>
+        <nav>
+          <ul class="nav-links">
+            <li><a href="#features">Features</a></li>
+            <li><a href="#how-it-works">How it Works</a></li>
+          </ul>
+        </nav>
+        <div class="nav-actions">
+          <a href="/dashboard.html" class="btn btn-ghost">Log In</a>
+          <a href="/dashboard.html" class="btn btn-primary">Get Started</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===================== HERO SECTION ===================== -->
+    <section class="hero" id="hero-section">
+      <div class="hero-content">
+        <div class="badge anim-hero-badge" style="background: rgba(52, 211, 153, 0.08); border-color: rgba(52, 211, 153, 0.2); color: var(--accent);">
+          <span class="badge-dot" style="background-color: var(--accent); box-shadow: 0 0 8px var(--accent);"></span>
+          <span>Civic Empowerment Hub</span>
+        </div>
+
+        <!-- Split Text Hero Title -->
+        <h1 class="hero-title anim-hero-title">
+          <span class="title-line">
+            <span class="title-word" style="--word-i:0">Be</span>
+            <span class="title-word" style="--word-i:1">the</span>
+            <span class="title-word" style="--word-i:2">Hero</span>
+          </span>
+          <span class="title-line">
+            <span class="title-word gradient-word" style="--word-i:3">Your</span>
+            <span class="title-word gradient-word" style="--word-i:4">Street</span>
+            <span class="title-word gradient-word" style="--word-i:5">Needs</span>
+          </span>
+        </h1>
+
+        <p class="hero-desc anim-hero-desc">
+          Identify, geotag, and report civic hazards like potholes, illegal dumping, or broken water lines. Gain badges, top the community leaderboard, and witness live municipal action on your reports.
+        </p>
+
+        <div class="hero-actions anim-hero-actions">
+          <a href="/dashboard.html" class="btn btn-primary magnetic-btn" id="hero-cta">
+            <span>Report a Problem Now</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </a>
+          <a href="#features" class="btn btn-outline magnetic-btn">
+            <span>Explore Features</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Live-Updating Mockup Feed — centered below hero text -->
+      <div class="hero-visual anim-hero-visual">
+        <div class="glowing-globe-container">
+          <div class="glow-circle glow-circle-1"></div>
+          <div class="glow-circle glow-circle-2"></div>
+        </div>
+        <div class="interactive-mockup tilt-card" id="hero-mockup">
+          <div class="mockup-header">
+            <span class="mockup-title">
+              <span class="mockup-dot"></span>
+              <span>Live Civic Incident Feed</span>
+            </span>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Real-Time</span>
+          </div>
+          <div class="mockup-feed" id="mockup-feed">
+            <div class="mockup-item">
+              <div class="mockup-item-top">
+                <span class="mockup-tag tag-pothole">Pothole</span>
+                <span class="mockup-status status-fixed">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 2px;"><polyline points="20 6 9 17 4 12"/></svg>
+                  Fixed
+                </span>
+              </div>
+              <div class="mockup-item-body">
+                Deep crater threatening cyclists on Sector 15 Main Road.
+              </div>
+              <div class="mockup-item-bottom">
+                <span>By @AmanRoy</span>
+                <span>2 mins ago</span>
+              </div>
+            </div>
+            <div class="mockup-item">
+              <div class="mockup-item-top">
+                <span class="mockup-tag tag-garbage">Garbage</span>
+                <span class="mockup-status status-active">In Review</span>
+              </div>
+              <div class="mockup-item-body">
+                Large plastic dumping next to the children's park entrance.
+              </div>
+              <div class="mockup-item-bottom">
+                <span>By @Sarah99</span>
+                <span>12 mins ago</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== MARQUEE TICKER ===================== -->
+    <section class="marquee-section">
+      <div class="marquee-track">
+        <div class="marquee-content">
+          <span class="marquee-item">🕳️ Potholes</span>
+          <span class="marquee-separator">✦</span>
+          <span class="marquee-item">🗑️ Garbage Dumps</span>
+          <span class="marquee-separator">✦</span>
+          <span class="marquee-item">💧 Water Leakage</span>
+          <span class="marquee-separator">✦</span>
+          <span class="marquee-item">🚧 Road Damage</span>
+          <span class="marquee-separator">✦</span>
+          <span class="marquee-item">💡 Broken Streetlights</span>
+          <span class="marquee-separator">✦</span>
+          <span class="marquee-item">🌳 Fallen Trees</span>
+          <span class="marquee-separator">✦</span>
+          <span class="marquee-item">🏗️ Illegal Construction</span>
+          <span class="marquee-separator">✦</span>
+          <span class="marquee-item">🕳️ Potholes</span>
+          <span class="marquee-separator">✦</span>
+          <span class="marquee-item">🗑️ Garbage Dumps</span>
+          <span class="marquee-separator">✦</span>
+          <span class="marquee-item">💧 Water Leakage</span>
+          <span class="marquee-separator">✦</span>
+          <span class="marquee-item">🚧 Road Damage</span>
+          <span class="marquee-separator">✦</span>
+          <span class="marquee-item">💡 Broken Streetlights</span>
+          <span class="marquee-separator">✦</span>
+          <span class="marquee-item">🌳 Fallen Trees</span>
+          <span class="marquee-separator">✦</span>
+          <span class="marquee-item">🏗️ Illegal Construction</span>
+          <span class="marquee-separator">✦</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== FEATURES SECTION ===================== -->
+    <section class="features" id="features">
+      <div class="features-sticky">
+        <div class="section-header scroll-reveal" data-reveal="fade-up">
+          <span class="section-subtitle">Core Platform</span>
+          <h2 class="section-title">Engineered to Solve Real Community Challenges</h2>
+          <p class="section-desc">We leverage modern geolocation, deduplication algorithms, and gamified mechanics to drive rapid community recovery.</p>
+        </div>
+
+        <div class="features-track-container">
+          <div class="features-track" id="features-track">
+            <!-- Feature Card 1 -->
+            <div class="feature-card tilt-card" data-tilt>
+              <div class="feature-icon-wrapper">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              </div>
+              <h3>Geotagged Reporting</h3>
+              <p>Pin issues directly on a map using native GPS geolocation. Auto-fetch address markers to send pin-point coordinates to resolution units.</p>
+            </div>
+
+            <!-- Feature Card 2 -->
+            <div class="feature-card tilt-card" data-tilt>
+              <div class="feature-icon-wrapper">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              </div>
+              <h3>Smart Deduplication</h3>
+              <p>Our algorithms perform a 50-meter radius collision check on active reports. Preventing duplicate noise and consolidating community reports.</p>
+            </div>
+
+            <!-- Feature Card 3 -->
+            <div class="feature-card tilt-card" data-tilt>
+              <div class="feature-icon-wrapper">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34"/><path d="M12 2a6 6 0 0 1 6 6v5a6 6 0 0 1-6 6 6 6 0 0 1-6-6V8a6 6 0 0 1 6-6z"/></svg>
+              </div>
+              <h3>Gamified Rewards</h3>
+              <p>Earn reputation points and status badges on verified reports and successful fixes. Rise to the top of your neighborhood leaderboard!</p>
+            </div>
+
+            <!-- Feature Card 4 -->
+            <div class="feature-card tilt-card" data-tilt>
+              <div class="feature-icon-wrapper">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              </div>
+              <h3>Municipal Dashboard</h3>
+              <p>Dedicated administration panel for city workers. Change report statuses, add notes, and trigger real-time notification updates back to citizens.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== HOW IT WORKS - HORIZONTAL SCROLL ===================== -->
+    <section class="how-it-works" id="how-it-works">
+      <div class="section-header scroll-reveal" data-reveal="fade-up">
+        <span class="section-subtitle">Real-Time Flow</span>
+        <h2 class="section-title">How Issues Get Fixed</h2>
+        <p class="section-desc">Watch how the platform forms a direct loop between citizens and local authorities in three simple steps.</p>
+      </div>
+
+      <div class="steps-container scroll-reveal-stagger">
+        <div class="step-card tilt-card">
+          <div class="step-number">01</div>
+          <div class="step-icon-ring">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </div>
+          <h4>Citizen Identifies</h4>
+          <p>Snap a photo, pick the type of issue (pothole, leakage, etc.), and the system auto-pulls your precise GPS location.</p>
+          <div class="step-line"></div>
+        </div>
+
+        <div class="step-card tilt-card">
+          <div class="step-number">02</div>
+          <div class="step-icon-ring" style="--ring-color: var(--secondary);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <h4>Smart Verification</h4>
+          <p>The system cross-references nearby issues to check for duplicates. New reports publish instantly and add points to your hero level.</p>
+          <div class="step-line"></div>
+        </div>
+
+        <div class="step-card tilt-card">
+          <div class="step-number">03</div>
+          <div class="step-icon-ring" style="--ring-color: var(--accent);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          </div>
+          <h4>Authority Resolves</h4>
+          <p>Municipal workers log into the Admin portal, claim the ticket, fix the issue, and mark it complete. You receive an instant dashboard update.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== IMPACT NUMBERS ===================== -->
+    <section class="impact-section" id="impact">
+      <div class="impact-bg-text" data-speed="0.05">IMPACT</div>
+      <div class="section-header scroll-reveal" data-reveal="fade-up">
+        <span class="section-subtitle">Community Impact</span>
+        <h2 class="section-title">Numbers That Matter</h2>
+      </div>
+      <div class="impact-grid scroll-reveal-stagger">
+        <div class="impact-card">
+          <h3 class="impact-number gradient-text"><span class="counter" data-target="2450" data-suffix="">0</span>+</h3>
+          <p>Active Community Heroes</p>
+        </div>
+        <div class="impact-card">
+          <h3 class="impact-number gradient-text-sec"><span class="counter" data-target="850" data-suffix="">0</span></h3>
+          <p>Issues Fixed This Month</p>
+        </div>
+        <div class="impact-card">
+          <h3 class="impact-number gradient-text"><span class="counter" data-target="12" data-suffix="">0</span></h3>
+          <p>Cities Connected</p>
+        </div>
+        <div class="impact-card">
+          <h3 class="impact-number gradient-text-sec"><span class="counter" data-target="4" data-suffix=".2">0</span>★</h3>
+          <p>Avg. User Rating</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== TESTIMONIALS ===================== -->
+    <section class="testimonials-section">
+      <div class="section-header scroll-reveal" data-reveal="fade-up">
+        <span class="section-subtitle">What Heroes Say</span>
+        <h2 class="section-title">Trusted by Thousands of Citizens</h2>
+      </div>
+      <div class="testimonials-grid scroll-reveal-stagger">
+        <div class="testimonial-card tilt-card">
+          <div class="testimonial-stars">★★★★★</div>
+          <p>"I reported a pothole on my street and it was fixed within 3 days. The live status updates kept me informed the entire time."</p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar">AR</div>
+            <div>
+              <strong>Aman Roy</strong>
+              <span>Sector 15, Chandigarh</span>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial-card tilt-card">
+          <div class="testimonial-stars">★★★★★</div>
+          <p>"The gamification aspect is brilliant! My kids love checking how many points I've earned for helping clean up our neighborhood."</p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar" style="background: rgba(167, 139, 250, 0.15); border-color: var(--secondary);">NK</div>
+            <div>
+              <strong>Nisha Kumar</strong>
+              <span>HSR Layout, Bangalore</span>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial-card tilt-card">
+          <div class="testimonial-stars">★★★★★</div>
+          <p>"As a city official, this platform has streamlined our entire complaint management system. We resolve issues 60% faster now."</p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar" style="background: rgba(52, 211, 153, 0.15); border-color: var(--accent);">VP</div>
+            <div>
+              <strong>Vikram Patil</strong>
+              <span>Municipal Officer, Pune</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== CTA SECTION ===================== -->
+    <section class="cta scroll-reveal" data-reveal="scale">
+      <div class="cta-box">
+        <h2 class="gradient-text">Ready to Improve Your Neighborhood?</h2>
+        <p>Join thousands of citizens cleaning up streets and reporting hazards. Your actions create a safer and cleaner environment for everyone.</p>
+        <a href="/dashboard.html" class="btn btn-primary magnetic-btn" style="padding: 14px 28px; font-size: 1rem;">
+          <span>Get Started Now</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <div class="footer-content">
+        <a href="/" class="footer-logo">
+          <span>Community Hero<span style="color: var(--primary);">.</span></span>
+        </a>
+        <div class="footer-copyright">
+          &copy; 2026 Community Hero. All rights reserved.
+        </div>
+      </div>
+    </footer>
+
+    <!-- Main Entry Script -->
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

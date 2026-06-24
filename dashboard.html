@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Citizen & Admin Portal — Community Hero</title>
+    <!-- Leaflet.js Map Stylesheet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  </head>
+  <body>
+    <!-- Canvas Particle Background -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- ===================== NOVA LOGIN FORM WRAPPER ===================== -->
+    <div class="login-wrapper" id="login-wrapper">
+      <!-- Ambient Orbs matching landing page -->
+      <div class="login-orb login-orb-1"></div>
+      <div class="login-orb login-orb-2"></div>
+      <div class="login-orb login-orb-3"></div>
+
+      <!-- Branding logo at top -->
+      <div class="login-branding">
+        <a href="/" class="logo" style="font-family: var(--font-heading); font-weight: 800; font-size: 1.4rem; color: var(--text-primary); text-decoration: none;">
+          Community Hero<span style="color: var(--primary);">.</span>
+        </a>
+      </div>
+
+      <!-- Centered Card -->
+      <div class="login-card" id="login-card">
+        <!-- State 1: LOGIN FORM -->
+        <div id="login-form-state">
+          <div class="login-card-header" style="margin-bottom: 20px;">
+            <h2 class="login-card-title">Welcome back</h2>
+            <p class="login-card-desc">Sign in to your account</p>
+          </div>
+          
+          <form id="login-form">
+            <div class="form-group" style="margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px;">
+              <label for="login-username" style="font-size: 0.85rem; color: #d4d4d8; text-align: left;">Email or Username</label>
+              <div class="login-input-wrapper">
+                <span class="login-input-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </span>
+                <input type="text" id="login-username" class="login-input" placeholder="you@example.com or admin" required autocomplete="username">
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 6px;">
+              <label for="login-password" style="font-size: 0.85rem; color: #d4d4d8; text-align: left;">Password</label>
+              <div class="login-input-wrapper">
+                <span class="login-input-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </span>
+                <input type="password" id="login-password" class="login-input" placeholder="••••••••" required autocomplete="current-password">
+                <button type="button" class="login-password-toggle" id="btn-toggle-login-pass" aria-label="Toggle password visibility">
+                  <!-- Eye Icon -->
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-open-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="login-flex-row" style="margin-bottom: 20px;">
+              <label class="login-checkbox-label">
+                <input type="checkbox" id="login-remember" class="login-checkbox">
+                <span>Remember me</span>
+              </label>
+              <a href="#" class="login-link">Forgot password?</a>
+            </div>
+
+            <div id="login-error" style="color: #ef4444; font-size: 0.85rem; font-weight: 600; margin-bottom: 15px; display: none; text-align: center;"></div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; background: #fafafa; color: #09090b; transition: all 0.2s;">Continue</button>
+          </form>
+
+          <div class="login-separator">
+            <div class="login-separator-line"></div>
+            <span class="login-separator-text">or</span>
+          </div>
+
+          <div class="login-social-grid">
+            <button class="btn-social" id="btn-login-google">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 0 1 8 4l-3 3a6 6 0 1 0-1 7l3 3a10 10 0 1 1-10-17z"/></svg>
+              <span>Google</span>
+            </button>
+          </div>
+
+          <div class="login-footer">
+            Don't have an account? <a href="#" class="login-footer-link" id="link-go-to-signup">Create one</a>
+          </div>
+        </div>
+
+        <!-- State 2: SIGNUP FORM (Initially Hidden) -->
+        <div id="signup-form-state" style="display: none;">
+          <div class="login-card-header" style="margin-bottom: 20px;">
+            <h2 class="login-card-title">Create an account</h2>
+            <p class="login-card-desc">Get started with your citizen profile</p>
+          </div>
+
+          <form id="signup-form">
+            <div class="form-group" style="margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px;">
+              <label for="signup-username" style="font-size: 0.85rem; color: #d4d4d8; text-align: left;">Username</label>
+              <div class="login-input-wrapper">
+                <span class="login-input-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </span>
+                <input type="text" id="signup-username" class="login-input" placeholder="Choose a username" required autocomplete="username">
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px;">
+              <label for="signup-email" style="font-size: 0.85rem; color: #d4d4d8; text-align: left;">Email Address</label>
+              <div class="login-input-wrapper">
+                <span class="login-input-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </span>
+                <input type="email" id="signup-email" class="login-input" placeholder="you@example.com" required autocomplete="email">
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 6px;">
+              <label for="signup-password" style="font-size: 0.85rem; color: #d4d4d8; text-align: left;">Password</label>
+              <div class="login-input-wrapper">
+                <span class="login-input-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </span>
+                <input type="password" id="signup-password" class="login-input" placeholder="••••••••" required autocomplete="new-password">
+                <button type="button" class="login-password-toggle" id="btn-toggle-signup-pass" aria-label="Toggle password visibility">
+                  <!-- Eye Icon -->
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-open-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div id="signup-error" style="color: #ef4444; font-size: 0.85rem; font-weight: 600; margin-bottom: 15px; display: none; text-align: center;"></div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; background: #fafafa; color: #09090b; transition: all 0.2s;">Create Account</button>
+          </form>
+
+          <div class="login-separator">
+            <div class="login-separator-line"></div>
+            <span class="login-separator-text">or</span>
+          </div>
+
+          <div class="login-social-grid">
+            <button class="btn-social" id="btn-signup-google">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 0 1 8 4l-3 3a6 6 0 1 0-1 7l3 3a10 10 0 1 1-10-17z"/></svg>
+              <span>Google</span>
+            </button>
+          </div>
+
+          <div class="login-footer">
+            Already have an account? <a href="#" class="login-footer-link" id="link-go-to-login">Sign in</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===================== PORTAL CONTAINER ===================== -->
+    <div class="dashboard-container" id="dashboard-container" style="display: none;">
+      <!-- Sidebar Navigation -->
+      <aside class="sidebar">
+        <div class="sidebar-top">
+          <!-- Logo -->
+          <a href="/" class="logo" style="font-size: 1.3rem; margin-bottom: 20px;">
+            <span>Hero<span style="color: var(--primary);">.</span></span>
+          </a>
+
+          <!-- User Card (Populated dynamically) -->
+          <div class="user-card" id="user-card">
+            <!-- Populated dynamically via JS -->
+            <div class="user-avatar-container">
+              <div class="user-avatar">U</div>
+              <span class="user-badge-level">LV 1</span>
+            </div>
+            <div class="user-info">
+              <h3>Loading Profile...</h3>
+              <p>Fetching badges...</p>
+            </div>
+          </div>
+
+          <!-- Navigation Links -->
+          <ul class="sidebar-nav">
+            <li class="active" id="nav-item-map"><a href="#map-section">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+              <span>Incident Map</span>
+            </a></li>
+            <li class="citizen-only" id="nav-item-reports"><a href="#reports-section">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              <span>My Reports</span>
+            </a></li>
+            <li class="citizen-only" id="nav-item-leaderboard"><a href="#leaderboard-section">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34"/><path d="M12 2a6 6 0 0 1 6 6v5a6 6 0 0 1-6 6 6 6 0 0 1-6-6V8a6 6 0 0 1 6-6z"/></svg>
+              <span>Leaderboard</span>
+            </a></li>
+            <li class="admin-only" id="nav-item-admin" style="display: none;"><a href="#admin-reports-section">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+              <span>Municipal Command</span>
+            </a></li>
+          </ul>
+        </div>
+
+        <div class="sidebar-bottom" style="display: flex; flex-direction: column; gap: 8px;">
+          <button class="btn btn-ghost" id="btn-logout" style="width: 100%; justify-content: flex-start; gap: 12px; padding: 12px 16px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>Log Out</span>
+          </button>
+          <a href="/" class="btn btn-ghost" style="width: 100%; justify-content: flex-start; gap: 12px; padding: 12px 16px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 8 12 12 16"/><line x1="16" y1="12" x2="8" y2="12"/></svg>
+            <span>Return Home</span>
+          </a>
+        </div>
+      </aside>
+
+      <!-- Main Panel Contents -->
+      <main class="main-content">
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+          <div class="dashboard-title">
+            <h1 id="dashboard-title-text">Citizen Command</h1>
+            <p id="dashboard-subtitle-text">Report hazards and track real-time resolution</p>
+          </div>
+          <!-- Citizen Action Button -->
+          <button class="btn btn-primary citizen-only" id="btn-quick-report" style="padding: 12px 24px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Quick Report</span>
+          </button>
+          <!-- Admin Sync Indicator -->
+          <div class="admin-only" id="admin-sync-indicator" style="display: none; font-size: 0.85rem; color: var(--accent); font-weight: 700; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2);">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: blink 1.5s infinite;"></span>
+            <span>Real-time Sync Active</span>
+          </div>
+        </div>
+
+        <!-- ================= ADMIN STATS COUNTERS (Admin Only) ================= -->
+        <div class="admin-only" id="admin-stats-row" style="display: none; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px;">
+          <div class="card" style="padding: 20px; flex-direction: row; align-items: center; justify-content: space-between;">
+            <div>
+              <p style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Total Issues</p>
+              <h2 id="stat-total" style="font-size: 2.2rem; font-weight: 800; margin-top: 4px;">0</h2>
+            </div>
+            <div style="padding: 10px; border-radius: 10px; background: rgba(255,255,255,0.03); color: var(--text-secondary);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+          </div>
+          <div class="card" style="padding: 20px; flex-direction: row; align-items: center; justify-content: space-between;">
+            <div>
+              <p style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Reported (New)</p>
+              <h2 id="stat-reported" style="font-size: 2.2rem; font-weight: 800; margin-top: 4px; color: var(--warning);">0</h2>
+            </div>
+            <div style="padding: 10px; border-radius: 10px; background: rgba(245, 158, 11, 0.05); color: var(--warning);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+          </div>
+          <div class="card" style="padding: 20px; flex-direction: row; align-items: center; justify-content: space-between;">
+            <div>
+              <p style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Under Review</p>
+              <h2 id="stat-review" style="font-size: 2.2rem; font-weight: 800; margin-top: 4px; color: var(--secondary);">0</h2>
+            </div>
+            <div style="padding: 10px; border-radius: 10px; background: rgba(99, 102, 241, 0.05); color: var(--secondary);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h6l2 9 4-18 2 9h6"/></svg>
+            </div>
+          </div>
+          <div class="card" style="padding: 20px; flex-direction: row; align-items: center; justify-content: space-between;">
+            <div>
+              <p style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Resolved (Fixed)</p>
+              <h2 id="stat-fixed" style="font-size: 2.2rem; font-weight: 800; margin-top: 4px; color: var(--accent);">0</h2>
+            </div>
+            <div style="padding: 10px; border-radius: 10px; background: rgba(16, 185, 129, 0.05); color: var(--accent);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 1: Map View -->
+        <section id="map-section" class="dashboard-grid full-width">
+          <div class="card full-width" style="padding: 20px;">
+            <div class="card-title">
+              <span id="map-card-title">Interactive Incident Radar</span>
+              <button class="btn btn-outline citizen-only" id="btn-locate-me" style="padding: 6px 12px; font-size: 0.8rem; gap: 6px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
+                <span>GPS Locate</span>
+              </button>
+            </div>
+            <div class="map-container-wrapper">
+              <div id="map"></div>
+              <div class="map-overlay-tip" id="map-overlay-tip">
+                <span class="pulse-icon" id="map-overlay-tip-dot"></span>
+                <span id="map-overlay-tip-text">Click directly on the map to drop a pin and report at that exact location</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 2: Citizen My Reports & Leaderboard -->
+        <div class="dashboard-grid citizen-only" id="citizen-sections-grid">
+          <!-- Left side: My Reports -->
+          <section id="reports-section" class="card" style="min-height: 400px;">
+            <div class="card-title">
+              <span>My Incident Reports</span>
+              <span id="reports-count-badge" class="mini-badge" style="font-size: 0.75rem; padding: 3px 8px; border-radius: 6px;">0 Reports</span>
+            </div>
+            <div class="reports-grid" id="reports-grid">
+              <!-- Dynamically populated -->
+              <p style="color: var(--text-muted); text-align: center; grid-column: 1/-1; padding-top: 40px;">No incidents reported yet. Drop a pin on the map to begin!</p>
+            </div>
+          </section>
+
+          <!-- Right side: Leaderboard -->
+          <section id="leaderboard-section" class="card">
+            <div class="card-title">
+              <span>Leaderboard</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--warning);"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34"/><path d="M12 2a6 6 0 0 1 6 6v5a6 6 0 0 1-6 6 6 6 0 0 1-6-6V8a6 6 0 0 1 6-6z"/></svg>
+            </div>
+            <div class="leaderboard-list" id="leaderboard-list">
+              <!-- Dynamically populated -->
+            </div>
+          </section>
+        </div>
+
+        <!-- ================= ADMIN REPORTS LIST (Admin Only) ================= -->
+        <section class="card full-width admin-only" id="admin-reports-section" style="display: none; margin-top: 30px;">
+          <div class="card-title">
+            <span>Pending Civic Reports</span>
+            <span id="admin-reports-count" class="mini-badge" style="font-size: 0.75rem; padding: 3px 8px; border-radius: 6px;">0 Tickets</span>
+          </div>
+          <div class="reports-grid" id="admin-reports-grid">
+            <!-- Dynamically populated admin reports -->
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+    <!-- Report Incident Modal -->
+    <div class="modal-backdrop" id="report-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Report Community Issue</h2>
+          <button class="btn-close" id="btn-close-modal">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <form id="report-form">
+          <!-- Coordinate placeholders -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="report-lat">Latitude</label>
+              <input type="text" id="report-lat" class="form-control" readonly required>
+            </div>
+            <div class="form-group">
+              <label for="report-lng">Longitude</label>
+              <input type="text" id="report-lng" class="form-control" readonly required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="report-type">Issue Category</label>
+            <select id="report-type" class="form-control" required>
+              <option value="" disabled selected>Select issue type...</option>
+              <option value="pothole">Pothole (Road Damage)</option>
+              <option value="garbage">Garbage / Waste Pile-up</option>
+              <option value="leakage">Water / Sewage Leakage</option>
+              <option value="hazard">General Safety Hazard</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="report-title">Brief Summary</label>
+            <input type="text" id="report-title" class="form-control" placeholder="e.g. Broken water main, Deep pothole outside park" required>
+          </div>
+
+          <div class="form-group">
+            <label for="report-desc">Detailed Description</label>
+            <textarea id="report-desc" class="form-control" rows="3" placeholder="Provide extra details to help authorities identify or resolve the problem..." required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Upload Incident Image</label>
+            <div class="file-upload-wrapper">
+              <label for="report-image" class="file-upload-label" id="file-label">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <span id="file-label-text" style="font-size: 0.85rem; font-weight: 500;">Select an image or snap a photo</span>
+              </label>
+              <input type="file" id="report-image" class="file-upload-input" accept="image/*" required>
+              <img id="image-preview" class="image-preview" src="" alt="Preview">
+            </div>
+          </div>
+
+          <!-- Error container -->
+          <div id="form-error" style="color: #ef4444; font-size: 0.85rem; font-weight: 600; margin-bottom: 15px; display: none;"></div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px;" id="btn-submit-report">Submit Community Incident</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Script Entry -->
+    <script type="module" src="/src/dashboard.js"></script>
+  </body>
+</html>
