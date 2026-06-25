@@ -10,12 +10,12 @@ if (supabaseUrl && supabaseAnonKey && supabaseUrl !== "YOUR_SUPABASE_URL") {
   try {
     supabase = createClient(supabaseUrl, supabaseAnonKey);
     useSupabase = true;
-    console.log("Community Hero: Successfully connected to Supabase Backend.");
+    console.log("NagarSeva: Successfully connected to Supabase Backend.");
   } catch (e) {
     console.error("Supabase init failed, switching to LocalMock storage.", e);
   }
 } else {
-  console.log("Community Hero: Supabase configuration not set. Using LocalStorage Mock Backend.");
+  console.log("NagarSeva: Supabase configuration not set. Using LocalStorage Mock Backend.");
 }
 
 /* =========================================================================
@@ -61,7 +61,7 @@ const MOCK_USERS = [
   },
   {
     userId: 'current_user',
-    username: 'You (Citizen Hero)',
+    username: 'You (NagarSeva Citizen)',
     points: 40,
     badges: ['First Responder'],
     bio: 'Proud community member reporting issues to keep our streets safe and clean.'
@@ -695,7 +695,7 @@ export async function submitReport(reportData, imageFile = null) {
     status: 'reported',
     timestamp: Date.now(),
     user_id: reportData.userId || 'current_user',
-    username: reportData.username || 'You (Citizen Hero)'
+    username: reportData.username || 'You (NagarSeva Citizen)'
   };
 
   if (useSupabase && !shouldBypassSupabase()) {

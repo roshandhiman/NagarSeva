@@ -208,7 +208,7 @@ function setupAuthHandlers() {
       if (email.toLowerCase() === 'citizen' && pass === 'citizen') {
         session = {
           userId: 'current_user',
-          username: 'You (Citizen Hero)',
+          username: 'You (NagarSeva Citizen)',
           role: 'citizen'
         };
         localStorage.setItem('ch_session', JSON.stringify(session));
@@ -700,7 +700,7 @@ function renderAdminReportsGrid() {
           </div>
           <div>
             <div style="display: flex; justify-content: space-between; font-size: 0.75rem; border-top: 1px solid var(--border-color); padding: 10px 0; color: var(--text-muted); margin-bottom: 10px;">
-              <span>Reporter: <strong>@${rep.username}</strong></span>
+              <span>Reporter: <strong class="view-user-profile-admin" data-username="${rep.username}" style="cursor: pointer; color: var(--primary);">@${rep.username}</strong></span>
               <a href="#" class="report-location-admin" data-lat="${rep.latitude}" data-lng="${rep.longitude}" style="color: var(--primary); text-decoration: none; font-weight: 600;">Locate Pin</a>
             </div>
             ${actionButtonsHTML}
@@ -825,7 +825,7 @@ async function updateGeocodedAddress(lat, lng) {
     const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
       headers: {
         'Accept-Language': 'en',
-        'User-Agent': 'CommunityHeroCivicApp/1.0'
+        'User-Agent': 'NagarSevaCivicApp/1.0'
       }
     });
 
@@ -1231,7 +1231,7 @@ function handleNavigation(targetId) {
     }
 
     // Update header
-    if (dashboardTitleText) dashboardTitleText.textContent = "Edit Hero Profile";
+    if (dashboardTitleText) dashboardTitleText.textContent = "Edit NagarSeva Profile";
     if (dashboardSubtitleText) dashboardSubtitleText.textContent = "Manage your community public username and action biography";
   } else {
     // Hide feed & profile sections
@@ -1582,7 +1582,7 @@ function renderFeedSection() {
               return `
                 <div class="comment-bubble" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px;">
                   <div class="comment-header" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: var(--text-muted);">
-                    <span class="comment-user" style="color: var(--primary); font-weight: 600;">@${comment.username}</span>
+                    <span class="comment-user view-user-profile-comment" data-username="${comment.username}" style="color: var(--primary); font-weight: 600; cursor: pointer;">@${comment.username}</span>
                     <span class="comment-time">${formatTimeAgo(comment.timestamp)}</span>
                   </div>
                   <p class="comment-text" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-secondary); margin: 0;">${comment.text}</p>
@@ -1594,6 +1594,14 @@ function renderFeedSection() {
                 </div>
               `;
             }).join('');
+
+            // Re-attach profile click listeners on newly rendered comments
+            listContainer.querySelectorAll('.view-user-profile-comment').forEach(el => {
+              el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openUserProfileModal(el.dataset.username);
+              });
+            });
           }
         }
         
@@ -1685,7 +1693,7 @@ async function openUserProfileModal(username) {
       username: username,
       points: 50,
       badges: ['First Responder'],
-      bio: "Just a citizen hero keeping the community clean!"
+      bio: "Just a NagarSeva citizen keeping the community clean!"
     };
   }
 
@@ -1693,7 +1701,7 @@ async function openUserProfileModal(username) {
   document.getElementById('modal-user-name').textContent = `@${targetUser.username}`;
   document.getElementById('modal-user-level').textContent = `LEVEL ${Math.floor((targetUser.points || 0) / 100) + 1}`;
   document.getElementById('modal-user-points').textContent = `${targetUser.points || 0} pts`;
-  document.getElementById('modal-user-bio').textContent = targetUser.bio || "No bio provided by this hero yet.";
+  document.getElementById('modal-user-bio').textContent = targetUser.bio || "No bio provided by this citizen yet.";
   document.getElementById('modal-user-avatar').textContent = targetUser.username.charAt(0).toUpperCase();
 
   // Badges
@@ -1716,7 +1724,7 @@ async function openUserProfileModal(username) {
 
   if (reportsListContainer) {
     if (userIncidents.length === 0) {
-      reportsListContainer.innerHTML = '<p style="font-size: 0.78rem; color: var(--text-muted); text-align: center; padding: 12px 0;">No reported incidents found for this hero.</p>';
+      reportsListContainer.innerHTML = '<p style="font-size: 0.78rem; color: var(--text-muted); text-align: center; padding: 12px 0;">No reported incidents found for this citizen.</p>';
     } else {
       reportsListContainer.innerHTML = userIncidents.map(rep => {
         const dateStr = new Date(rep.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
