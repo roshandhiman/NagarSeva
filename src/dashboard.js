@@ -3,6 +3,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getUserProfile, getLeaderboard, getReports, submitReport, updateReportStatus, signIn, signUp, signOut, getCurrentSession, signInWithGoogle, ensureUserProfile, addReportComment, updateUserProfile } from './api.js';
 import { initCursor } from './cursor.js';
+import { initChatbot, setChatReports, checkDuplicateReport } from './ai.js';
 
 // Initialize custom cursor on this page
 initCursor();
@@ -314,6 +315,11 @@ async function initDashboard() {
   await refreshIncidents();
   setupEventListeners();
 
+  // Init NagBot AI chatbot (only once)
+  if (!document.getElementById('nagbot-container')) {
+    initChatbot();
+  }
+
   // Handle initial URL hash routing
   if (window.location.hash === '#feed-section') {
     const navItemFeed = document.getElementById('nav-item-feed');
@@ -582,6 +588,12 @@ async function refreshIncidents() {
 
   // Render public feed for all roles
   renderFeedSection();
+
+  // Feed NagBot ONLY the current user's own reports (not all reports)
+  if (session.role !== 'admin') {
+    const myReports = allReports.filter(r => r.userId === session.userId || r.username === (currentUser?.username || session.username));
+    setChatReports(myReports, currentUser?.username || session.username || 'Citizen');
+  }
 }
 
 function updateAdminStats() {
@@ -1111,8 +1123,10 @@ function setupEventListeners() {
     reportForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       formError.style.display = 'none';
-      btnSubmitReport.disabled = true;
-      btnSubmitReport.textContent = 'Analyzing and uploading...';
+
+      // Remove any previous duplicate warning
+      const prevWarn = document.getElementById('duplicate-warning-banner');
+      if (prevWarn) prevWarn.remove();
 
       const reportData = {
         title: document.getElementById('report-title').value,
@@ -1126,22 +1140,72 @@ function setupEventListeners() {
 
       const imageFile = fileInput.files[0];
 
+      // ── AI Duplicate Detection ──────────────────────────
+      btnSubmitReport.disabled = true;
+      btnSubmitReport.textContent = '🤖 AI checking for duplicates...';
+
+      const dupResult = await checkDuplicateReport(reportData, allReports);
+
+      if (dupResult) {
+        // Show warning and wait for user decision
+        btnSubmitReport.disabled = false;
+        btnSubmitReport.textContent = 'Submit Community Incident';
+
+        const warningHTML = `
+          <div class="duplicate-warning" id="duplicate-warning-banner">
+            <div class="duplicate-warning-title">
+              ⚠️ AI Detected a Possible Duplicate
+            </div>
+            <div class="duplicate-warning-body">
+              <strong>${dupResult.matchedReport?.title || 'Similar issue'}</strong> was already reported nearby (Status: ${dupResult.matchedReport?.status || 'reported'}).<br>
+              <em>${dupResult.reason}</em><br><br>
+              Do you still want to submit your report?
+            </div>
+            <div class="duplicate-warning-actions">
+              <button class="btn-dup-cancel" id="btn-dup-cancel">❌ Cancel</button>
+              <button class="btn-dup-continue" id="btn-dup-continue">✅ Submit Anyway</button>
+            </div>
+          </div>
+        `;
+        const formErrorEl = document.getElementById('form-error');
+        formErrorEl.insertAdjacentHTML('afterend', warningHTML);
+
+        // Cancel
+        document.getElementById('btn-dup-cancel').addEventListener('click', () => {
+          document.getElementById('duplicate-warning-banner')?.remove();
+        });
+
+        // Continue anyway
+        document.getElementById('btn-dup-continue').addEventListener('click', async () => {
+          document.getElementById('duplicate-warning-banner')?.remove();
+          await doSubmitReport(reportData, imageFile);
+        });
+
+        return; // Don't submit yet
+      }
+      // ── End Duplicate Detection ─────────────────────────
+
+      await doSubmitReport(reportData, imageFile);
+    });
+
+    async function doSubmitReport(reportData, imageFile) {
+      btnSubmitReport.disabled = true;
+      btnSubmitReport.textContent = 'Uploading...';
       try {
         await submitReport(reportData, imageFile);
-        
         await loadUserData();
         await refreshIncidents();
         closeReportModal();
-        
-        alert("Success! Incident reported. You gained +50 points!");
+        alert('Success! Incident reported. You gained +50 points!');
       } catch (err) {
+        const formError = document.getElementById('form-error');
         formError.textContent = err.message;
         formError.style.display = 'block';
       } finally {
         btnSubmitReport.disabled = false;
         btnSubmitReport.textContent = 'Submit Community Incident';
       }
-    });
+    }
 
     const profileEditForm = document.getElementById('profile-edit-form');
     if (profileEditForm) {

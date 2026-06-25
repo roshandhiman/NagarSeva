@@ -31,6 +31,18 @@
 
 ## ✨ Features
 
+### 🤖 NagBot AI Assistant (Groq-Powered)
+- **Strict Personal Report Tracker**: A secure AI chatbot strictly scoped to the logged-in user's own reports.
+- **Natural Language Interaction**: Users can ask NagBot about their active, resolved, or under-review reports in plain English.
+- **Quick Action Buttons**: Includes one-tap shortcuts (`📋 My Reports`, `✅ Resolved`, `📋 Open`) for instant progress tracking.
+- **Secure & Focused**: Politely refuses off-topic queries (coding, general knowledge, or other users' reports) to keep users focused on civic resolutions.
+- **Ultra-Fast Performance**: Driven by the lightning-fast **Groq Cloud API** running `llama-3.1-8b-instant`.
+
+### 🔁 Real-Time Duplicate Report Detection
+- **Smart Geo-Analysis**: Automatically analyzes reports within a 2km radius when a citizen drafts a new report.
+- **AI Matching Engine**: Groq checks the new report's description, title, and category against nearby records.
+- **Interactive Warn Banner**: Displays a floating alert banner on the report form if a duplicate is found, allowing citizens to check the existing report instead of creating clutter.
+
 ### 🗺️ Interactive GPS-Powered Map
 - Auto-locates the user on load and centers the Leaflet map on their GPS coordinates.
 - Citizens can click anywhere to drop a pin and instantly file a new report.
@@ -158,6 +170,7 @@ Create a `.env` file in the project root:
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_GROQ_API_KEY=your_groq_api_key_here
 ```
 
 ---
