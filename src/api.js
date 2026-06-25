@@ -4,7 +4,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 
 export let supabase = null;
-let useSupabase = false;
+export let useSupabase = false;
 
 if (supabaseUrl && supabaseAnonKey && supabaseUrl !== "YOUR_SUPABASE_URL") {
   try {
@@ -535,11 +535,12 @@ export async function updateUserProfile(userId, { username, bio }) {
   return users[userIndex];
 }
 
-// Helper to check if current session should bypass Supabase (e.g. citizen/admin login)
+// Helper to check if current session should bypass Supabase (e.g. citizen login bypass)
 function shouldBypassSupabase() {
   try {
     const session = JSON.parse(localStorage.getItem('ch_session') || 'null');
-    if (session && (session.userId === 'current_user' || session.userId === 'admin' || (session.userId && session.userId.startsWith('user')))) {
+    // Admin bypass does NOT bypass Supabase if connected so they can manage live data
+    if (session && (session.userId === 'current_user' || (session.userId && session.userId.startsWith('user')))) {
       return true;
     }
   } catch (e) {
@@ -705,7 +706,12 @@ export async function submitReport(reportData, imageFile = null) {
         .select()
         .single();
         
-      if (data && !error) {
+      if (error) {
+        console.error("Supabase submitReport insert error:", error);
+        throw new Error(`Failed to save report to database: ${error.message}`);
+      }
+        
+      if (data) {
         await updateUserPoints(finalReport.user_id, 50); // +50 points per report
         return {
           id: data.id,
@@ -722,29 +728,30 @@ export async function submitReport(reportData, imageFile = null) {
         };
       }
     } catch (e) {
-      console.error("Supabase submitReport failed, using local mock", e);
+      console.error("Supabase submitReport failed", e);
+      throw e;
     }
+  } else {
+    // Local storage mock fallback
+    const reports = JSON.parse(localStorage.getItem('ch_reports'));
+    const newId = `report_${Date.now()}`;
+    const savedReport = { 
+      id: newId, 
+      ...finalReport,
+      photoUrl: finalReport.photo_url,
+      userId: finalReport.user_id,
+      comments: [],
+      solvedPhotoUrl: null,
+      solvedAt: null
+    };
+    reports.push(savedReport);
+    localStorage.setItem('ch_reports', JSON.stringify(reports));
+
+    // Add points to user
+    await updateUserPoints(finalReport.user_id, 50);
+
+    return savedReport;
   }
-
-  // Local storage mock fallback
-  const reports = JSON.parse(localStorage.getItem('ch_reports'));
-  const newId = `report_${Date.now()}`;
-  const savedReport = { 
-    id: newId, 
-    ...finalReport,
-    photoUrl: finalReport.photo_url,
-    userId: finalReport.user_id,
-    comments: [],
-    solvedPhotoUrl: null,
-    solvedAt: null
-  };
-  reports.push(savedReport);
-  localStorage.setItem('ch_reports', JSON.stringify(reports));
-
-  // Add points to user
-  await updateUserPoints(finalReport.user_id, 50);
-
-  return savedReport;
 }
 
 // Update report status (admin feature)
@@ -800,7 +807,12 @@ export async function updateReportStatus(reportId, newStatus, solvedImageFile = 
         .select()
         .single();
         
-      if (data && !error) {
+      if (error) {
+        console.error("Supabase updateReportStatus error:", error);
+        throw new Error(`Failed to update report status in database: ${error.message}`);
+      }
+        
+      if (data) {
         if (newStatus === 'fixed') {
           await updateUserPoints(data.user_id, 100);
 
@@ -812,7 +824,9 @@ export async function updateReportStatus(reportId, newStatus, solvedImageFile = 
               .eq('id', reportId)
               .single();
 
-            if (reportData && !checkError) {
+            if (checkError) throw checkError;
+
+            if (reportData) {
               const currentComments = reportData.comments || [];
               const adminComment = {
                 username: 'Municipal Board',
@@ -820,54 +834,56 @@ export async function updateReportStatus(reportId, newStatus, solvedImageFile = 
                 photoUrl: solvedPhotoUrl,
                 timestamp: Date.now()
               };
-              await supabase
+              const { error: commentUpdateErr } = await supabase
                 .from('reports')
                 .update({ comments: [...currentComments, adminComment] })
                 .eq('id', reportId);
+              if (commentUpdateErr) throw commentUpdateErr;
             }
           } catch (commentErr) {
-            console.warn("Could not auto-post resolution comment (comments column may be missing):", commentErr);
+            console.warn("Could not auto-post resolution comment:", commentErr);
           }
         }
         return true;
       }
     } catch (e) {
-      console.error("Supabase updateReportStatus failed, using local mock", e);
+      console.error("Supabase updateReportStatus failed", e);
+      throw e;
     }
-  }
-
-  // Local storage mock fallback
-  const reports = JSON.parse(localStorage.getItem('ch_reports'));
-  const reportIndex = reports.findIndex(r => r.id === reportId);
-  if (reportIndex !== -1) {
-    reports[reportIndex].status = newStatus;
-    if (newStatus === 'fixed') {
-      reports[reportIndex].solvedAt = solvedAt;
-      if (solvedPhotoUrl) {
-        reports[reportIndex].solvedPhotoUrl = solvedPhotoUrl;
+  } else {
+    // Local storage mock fallback
+    const reports = JSON.parse(localStorage.getItem('ch_reports'));
+    const reportIndex = reports.findIndex(r => r.id === reportId);
+    if (reportIndex !== -1) {
+      reports[reportIndex].status = newStatus;
+      if (newStatus === 'fixed') {
+        reports[reportIndex].solvedAt = solvedAt;
+        if (solvedPhotoUrl) {
+          reports[reportIndex].solvedPhotoUrl = solvedPhotoUrl;
+        }
+        
+        // Auto-post official admin comment with solved photo in LocalStorage mock
+        if (!reports[reportIndex].comments) {
+          reports[reportIndex].comments = [];
+        }
+        reports[reportIndex].comments.push({
+          username: 'Municipal Board',
+          text: 'Official Resolution Update: This issue has been successfully resolved and fixed! Thank you for keeping our community safe.',
+          photoUrl: solvedPhotoUrl,
+          timestamp: Date.now()
+        });
       }
-      
-      // Auto-post official admin comment with solved photo in LocalStorage mock
-      if (!reports[reportIndex].comments) {
-        reports[reportIndex].comments = [];
-      }
-      reports[reportIndex].comments.push({
-        username: 'Municipal Board',
-        text: 'Official Resolution Update: This issue has been successfully resolved and fixed! Thank you for keeping our community safe.',
-        photoUrl: solvedPhotoUrl,
-        timestamp: Date.now()
-      });
-    }
-    localStorage.setItem('ch_reports', JSON.stringify(reports));
+      localStorage.setItem('ch_reports', JSON.stringify(reports));
 
-    // If report is marked fixed, reward the original reporter with extra points
-    if (newStatus === 'fixed') {
-      const reporterId = reports[reportIndex].userId;
-      await updateUserPoints(reporterId, 100); // +100 bonus points for resolution!
+      // If report is marked fixed, reward the original reporter with extra points
+      if (newStatus === 'fixed') {
+        const reporterId = reports[reportIndex].userId;
+        await updateUserPoints(reporterId, 100); // +100 bonus points for resolution!
+      }
+      return true;
     }
-    return true;
+    return false;
   }
-  return false;
 }
 
 // Add comment to a report
@@ -879,46 +895,52 @@ export async function addReportComment(reportId, username, text) {
   };
 
   if (useSupabase && !shouldBypassSupabase() && !reportId.startsWith('report_')) {
-    try {
-      // Fetch current comments first
-      const { data: report, error: fetchError } = await supabase
+    // Fetch current comments first
+    const { data: report, error: fetchError } = await supabase
+      .from('reports')
+      .select('comments')
+      .eq('id', reportId)
+      .single();
+
+    if (fetchError) {
+      console.error("Supabase addReportComment fetch error:", fetchError);
+      throw new Error(`Failed to fetch comments: ${fetchError.message}`);
+    }
+
+    if (report) {
+      const currentComments = report.comments || [];
+      const updatedComments = [...currentComments, newComment];
+
+      const { data, error } = await supabase
         .from('reports')
-        .select('comments')
+        .update({ comments: updatedComments })
         .eq('id', reportId)
+        .select()
         .single();
 
-      if (report && !fetchError) {
-        const currentComments = report.comments || [];
-        const updatedComments = [...currentComments, newComment];
-
-        const { data, error } = await supabase
-          .from('reports')
-          .update({ comments: updatedComments })
-          .eq('id', reportId)
-          .select()
-          .single();
-
-        if (data && !error) {
-          return data.comments;
-        }
+      if (error) {
+        console.error("Supabase addReportComment update error:", error);
+        throw new Error(`Failed to save comment: ${error.message}`);
       }
-    } catch (e) {
-      console.error("Supabase addReportComment failed, using local mock", e);
-    }
-  }
 
-  // Local storage mock fallback
-  const reports = JSON.parse(localStorage.getItem('ch_reports'));
-  const reportIndex = reports.findIndex(r => r.id === reportId);
-  if (reportIndex !== -1) {
-    if (!reports[reportIndex].comments) {
-      reports[reportIndex].comments = [];
+      if (data) {
+        return data.comments;
+      }
     }
-    reports[reportIndex].comments.push(newComment);
-    localStorage.setItem('ch_reports', JSON.stringify(reports));
-    return reports[reportIndex].comments;
+  } else {
+    // Local storage mock fallback
+    const reports = JSON.parse(localStorage.getItem('ch_reports'));
+    const reportIndex = reports.findIndex(r => r.id === reportId);
+    if (reportIndex !== -1) {
+      if (!reports[reportIndex].comments) {
+        reports[reportIndex].comments = [];
+      }
+      reports[reportIndex].comments.push(newComment);
+      localStorage.setItem('ch_reports', JSON.stringify(reports));
+      return reports[reportIndex].comments;
+    }
+    return [];
   }
-  return [];
 }
 
 // Helper to award points and calculate badge upgrades

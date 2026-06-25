@@ -26,6 +26,7 @@ let allReports = [];
 let currentUser = null;
 let activeMarkers = [];
 let session = null;
+let isMapInitiallyCentered = false;
 
 // DOM Elements - Layout
 const loginWrapper = document.getElementById('login-wrapper');
@@ -452,8 +453,8 @@ function initMap() {
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
 
-  // Automatically request and pan to current GPS location on load
-  locateUser(true);
+  // Automatically request GPS location on load (without panning the map view)
+  locateUser(false);
 
   if (session.role === 'citizen') {
     map.on('click', (e) => {
@@ -545,6 +546,22 @@ async function refreshIncidents() {
 
     activeMarkers.push(marker);
   });
+
+  // Center map on the average of all active reports only once on initial load
+  if (!isMapInitiallyCentered && allReports.length > 0) {
+    let sumLat = 0;
+    let sumLng = 0;
+    allReports.forEach(r => {
+      sumLat += r.latitude;
+      sumLng += r.longitude;
+    });
+    const centerLat = sumLat / allReports.length;
+    const centerLng = sumLng / allReports.length;
+    if (map) {
+      map.setView([centerLat, centerLng], 13);
+      isMapInitiallyCentered = true;
+    }
+  }
 
   if (session.role === 'admin') {
     updateAdminStats();
