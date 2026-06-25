@@ -1501,6 +1501,7 @@ footer {
 }
 
 .user-card {
+  position: relative;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--border-color);
   border-radius: 16px;
@@ -1581,6 +1582,12 @@ footer {
   flex-direction: column;
   gap: 8px;
   list-style: none;
+  width: 100%;
+}
+
+.sidebar-nav li {
+  display: flex;
+  width: 100%;
 }
 
 .sidebar-nav a {
@@ -1594,6 +1601,8 @@ footer {
   font-weight: 500;
   font-size: 0.95rem;
   transition: all var(--transition-fast);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .sidebar-nav li.active a,
@@ -2128,10 +2137,15 @@ footer {
     flex-direction: row;
     overflow-x: auto;
     padding-bottom: 5px;
+    width: auto;
+  }
+  .sidebar-nav li {
+    width: auto;
   }
   .sidebar-nav a {
     white-space: nowrap;
     padding: 8px 12px;
+    width: auto;
   }
   .sidebar-nav li.active a,
   .sidebar-nav a:hover {
@@ -2620,5 +2634,127 @@ footer {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* =========================================================================
+   PUBLIC INCIDENT FEED & COMMENTS SECTION
+   ========================================================================= */
+
+.feed-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 680px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.feed-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.01) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: all var(--transition-normal);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+}
+
+.feed-card:hover {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  background: rgba(255, 255, 255, 0.02) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 242, 254, 0.03);
+}
+
+.feed-media-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+@media (max-width: 580px) {
+  .feed-media-comparison {
+    grid-template-columns: 1fr;
+  }
+}
+
+.feed-media-img {
+  width: 100%;
+  border-radius: 12px;
+  object-fit: cover;
+  transition: transform var(--transition-normal);
+}
+
+.feed-media-img:hover {
+  transform: scale(1.02);
+}
+
+.media-label {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  letter-spacing: 0.05em;
+}
+
+.media-label.before {
+  background: rgba(239, 68, 68, 0.85);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+}
+
+.media-label.after {
+  background: rgba(16, 185, 129, 0.85);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+}
+
+.comment-bubble {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  transition: all var(--transition-fast);
+}
+
+.comment-bubble:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.comment-input:focus {
+  outline: none;
+  border-color: var(--primary) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  box-shadow: 0 0 0 2px rgba(0, 242, 254, 0.1);
+}
+
+/* Custom scrollbar for comments list */
+.comments-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.comments-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.comments-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+.comments-list::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
 }
 

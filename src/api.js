@@ -80,7 +80,27 @@ function initLocalMock() {
     localStorage.setItem('ch_users', JSON.stringify(MOCK_USERS));
   }
   if (!localStorage.getItem('ch_reports')) {
-    localStorage.setItem('ch_reports', JSON.stringify(MOCK_REPORTS));
+    const preseeded = MOCK_REPORTS.map(r => ({
+      comments: r.id === 'report_1' ? [
+        { username: 'Sarah99', text: 'Awesome job fixing this so quickly! The road is safe now.', timestamp: Date.now() - 3600000 * 2 }
+      ] : [],
+      solvedPhotoUrl: r.status === 'fixed' ? 'https://images.unsplash.com/photo-1599740831464-54fd0a36bcfa?auto=format&fit=crop&w=600&q=80' : null,
+      solvedAt: r.status === 'fixed' ? r.timestamp + 3600000 * 3 : null,
+      ...r
+    }));
+    localStorage.setItem('ch_reports', JSON.stringify(preseeded));
+  } else {
+    const current = JSON.parse(localStorage.getItem('ch_reports')) || [];
+    let updated = false;
+    current.forEach(r => {
+      if (!r.comments) {
+        r.comments = [];
+        updated = true;
+      }
+    });
+    if (updated) {
+      localStorage.setItem('ch_reports', JSON.stringify(current));
+    }
   }
 }
 initLocalMock();
@@ -319,7 +339,8 @@ export async function getUserProfile(userId = 'current_user') {
           userId: data.user_id,
           username: data.username,
           points: data.points,
-          badges: data.badges || []
+          badges: data.badges || [],
+          bio: data.bio || ""
         };
       }
     } catch (e) {
@@ -329,7 +350,56 @@ export async function getUserProfile(userId = 'current_user') {
   
   // Local storage mock
   const users = JSON.parse(localStorage.getItem('ch_users'));
-  return users.find(u => u.userId === userId) || users[users.length - 1];
+  const found = users.find(u => u.userId === userId) || users[users.length - 1];
+  if (found && !found.bio) {
+    found.bio = "";
+  }
+  return found;
+}
+
+// Update user profile information
+export async function updateUserProfile(userId, { username, bio }) {
+  if (useSupabase) {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .update({ username, bio })
+        .eq('user_id', userId)
+        .select()
+        .single();
+      
+      if (data && !error) {
+        return {
+          userId: data.user_id,
+          username: data.username,
+          points: data.points,
+          badges: data.badges || [],
+          bio: data.bio || ""
+        };
+      }
+    } catch (e) {
+      console.error("Supabase updateUserProfile failed", e);
+    }
+  }
+
+  // Local storage mock fallback
+  const users = JSON.parse(localStorage.getItem('ch_users'));
+  const userIndex = users.findIndex(u => u.userId === userId);
+  if (userIndex !== -1) {
+    users[userIndex].username = username;
+    users[userIndex].bio = bio;
+    localStorage.setItem('ch_users', JSON.stringify(users));
+
+    // Update active session metadata
+    const session = JSON.parse(localStorage.getItem('ch_session'));
+    if (session && session.userId === userId) {
+      session.username = username;
+      localStorage.setItem('ch_session', JSON.stringify(session));
+    }
+
+    return users[userIndex];
+  }
+  return null;
 }
 
 // Get the top users sorted by points
@@ -380,7 +450,10 @@ export async function getReports() {
           status: d.status,
           timestamp: d.timestamp,
           userId: d.user_id,
-          username: d.username
+          username: d.username,
+          solvedPhotoUrl: d.solved_photo_url || null,
+          solvedAt: d.solved_at || null,
+          comments: d.comments || []
         }));
       }
     } catch (e) {
@@ -491,7 +564,10 @@ export async function submitReport(reportData, imageFile = null) {
     id: newId, 
     ...finalReport,
     photoUrl: finalReport.photo_url,
-    userId: finalReport.user_id
+    userId: finalReport.user_id,
+    comments: [],
+    solvedPhotoUrl: null,
+    solvedAt: null
   };
   reports.push(savedReport);
   localStorage.setItem('ch_reports', JSON.stringify(reports));
@@ -503,12 +579,54 @@ export async function submitReport(reportData, imageFile = null) {
 }
 
 // Update report status (admin feature)
-export async function updateReportStatus(reportId, newStatus) {
+export async function updateReportStatus(reportId, newStatus, solvedImageFile = null) {
+  let solvedPhotoUrl = null;
+  let solvedAt = null;
+
+  if (newStatus === 'fixed') {
+    solvedAt = Date.now();
+    if (solvedImageFile) {
+      if (useSupabase) {
+        try {
+          const fileExt = solvedImageFile.name.split('.').pop();
+          const fileName = `${Date.now()}_solved_${Math.random()}.${fileExt}`;
+          const filePath = `reports/${fileName}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('community_hero_bucket')
+            .upload(filePath, solvedImageFile);
+
+          if (!uploadError) {
+            const { data } = supabase.storage
+              .from('community_hero_bucket')
+              .getPublicUrl(filePath);
+            solvedPhotoUrl = data.publicUrl;
+          } else {
+            solvedPhotoUrl = await readAsDataURL(solvedImageFile);
+          }
+        } catch (e) {
+          console.error("Supabase solved storage upload failed, converting to dataURI", e);
+          solvedPhotoUrl = await readAsDataURL(solvedImageFile);
+        }
+      } else {
+        solvedPhotoUrl = await readAsDataURL(solvedImageFile);
+      }
+    }
+  }
+
   if (useSupabase) {
     try {
+      const updateData = { status: newStatus };
+      if (newStatus === 'fixed') {
+        updateData.solved_at = solvedAt;
+        if (solvedPhotoUrl) {
+          updateData.solved_photo_url = solvedPhotoUrl;
+        }
+      }
+
       const { data, error } = await supabase
         .from('reports')
-        .update({ status: newStatus })
+        .update(updateData)
         .eq('id', reportId)
         .select()
         .single();
@@ -529,6 +647,12 @@ export async function updateReportStatus(reportId, newStatus) {
   const reportIndex = reports.findIndex(r => r.id === reportId);
   if (reportIndex !== -1) {
     reports[reportIndex].status = newStatus;
+    if (newStatus === 'fixed') {
+      reports[reportIndex].solvedAt = solvedAt;
+      if (solvedPhotoUrl) {
+        reports[reportIndex].solvedPhotoUrl = solvedPhotoUrl;
+      }
+    }
     localStorage.setItem('ch_reports', JSON.stringify(reports));
 
     // If report is marked fixed, reward the original reporter with extra points
@@ -539,6 +663,57 @@ export async function updateReportStatus(reportId, newStatus) {
     return true;
   }
   return false;
+}
+
+// Add comment to a report
+export async function addReportComment(reportId, username, text) {
+  const newComment = {
+    username,
+    text,
+    timestamp: Date.now()
+  };
+
+  if (useSupabase) {
+    try {
+      // Fetch current comments first
+      const { data: report, error: fetchError } = await supabase
+        .from('reports')
+        .select('comments')
+        .eq('id', reportId)
+        .single();
+
+      if (report && !fetchError) {
+        const currentComments = report.comments || [];
+        const updatedComments = [...currentComments, newComment];
+
+        const { data, error } = await supabase
+          .from('reports')
+          .update({ comments: updatedComments })
+          .eq('id', reportId)
+          .select()
+          .single();
+
+        if (data && !error) {
+          return data.comments;
+        }
+      }
+    } catch (e) {
+      console.error("Supabase addReportComment failed, using local mock", e);
+    }
+  }
+
+  // Local storage mock fallback
+  const reports = JSON.parse(localStorage.getItem('ch_reports'));
+  const reportIndex = reports.findIndex(r => r.id === reportId);
+  if (reportIndex !== -1) {
+    if (!reports[reportIndex].comments) {
+      reports[reportIndex].comments = [];
+    }
+    reports[reportIndex].comments.push(newComment);
+    localStorage.setItem('ch_reports', JSON.stringify(reports));
+    return reports[reportIndex].comments;
+  }
+  return [];
 }
 
 // Helper to award points and calculate badge upgrades

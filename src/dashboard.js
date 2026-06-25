@@ -1,7 +1,7 @@
 import './style.css';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { getUserProfile, getLeaderboard, getReports, submitReport, updateReportStatus, signIn, signUp, signOut, getCurrentSession, signInWithGoogle, ensureUserProfile } from './api.js';
+import { getUserProfile, getLeaderboard, getReports, submitReport, updateReportStatus, signIn, signUp, signOut, getCurrentSession, signInWithGoogle, ensureUserProfile, addReportComment, updateUserProfile } from './api.js';
 import { initCursor } from './cursor.js';
 
 // Initialize custom cursor on this page
@@ -65,6 +65,10 @@ const dashboardTitleText = document.getElementById('dashboard-title-text');
 const dashboardSubtitleText = document.getElementById('dashboard-subtitle-text');
 const mapCardTitle = document.getElementById('map-card-title');
 const mapOverlayTipText = document.getElementById('map-overlay-tip-text');
+
+// DOM Elements - Public Feed
+const feedReportsContainer = document.getElementById('feed-reports-container');
+const feedReportsCount = document.getElementById('feed-reports-count');
 
 // DOM Elements - Modal & Form
 const reportModal = document.getElementById('report-modal');
@@ -308,11 +312,21 @@ async function initDashboard() {
   initMap();
   await refreshIncidents();
   setupEventListeners();
+
+  // Handle initial URL hash routing
+  if (window.location.hash === '#feed-section') {
+    const navItemFeed = document.getElementById('nav-item-feed');
+    if (navItemFeed) {
+      navItemFeed.click();
+    }
+  }
 }
 
 function toggleRoleLayout() {
   const citizenEls = document.querySelectorAll('.citizen-only');
   const adminEls = document.querySelectorAll('.admin-only');
+  const feedSection = document.getElementById('feed-section');
+  if (feedSection) feedSection.style.display = 'none';
 
   if (session.role === 'admin') {
     adminEls.forEach(el => el.style.display = 'flex');
@@ -335,8 +349,10 @@ function toggleRoleLayout() {
 
     const navItemMap = document.getElementById('nav-item-map');
     const navItemAdmin = document.getElementById('nav-item-admin');
+    const navItemFeed = document.getElementById('nav-item-feed');
     if (navItemMap) navItemMap.classList.add('active');
     if (navItemAdmin) navItemAdmin.classList.remove('active');
+    if (navItemFeed) navItemFeed.classList.remove('active');
 
   } else {
     citizenEls.forEach(el => el.style.display = 'flex');
@@ -350,6 +366,11 @@ function toggleRoleLayout() {
     dashboardSubtitleText.textContent = "Report hazards and track real-time resolution";
     mapCardTitle.textContent = "Interactive Incident Radar";
     mapOverlayTipText.textContent = "Click directly on the map to drop a pin and report at that exact location";
+
+    const navItemMap = document.getElementById('nav-item-map');
+    const navItemFeed = document.getElementById('nav-item-feed');
+    if (navItemMap) navItemMap.classList.add('active');
+    if (navItemFeed) navItemFeed.classList.remove('active');
   }
 }
 
@@ -521,6 +542,9 @@ async function refreshIncidents() {
     renderMyReports();
     await loadLeaderboard();
   }
+
+  // Render public feed for all roles
+  renderFeedSection();
 }
 
 function updateAdminStats() {
@@ -603,15 +627,31 @@ function renderAdminReportsGrid() {
       `;
     } else if (rep.status === 'review') {
       actionButtonsHTML = `
-        <button class="btn btn-primary admin-action-btn" data-id="${rep.id}" data-action="fixed" style="width: 100%; padding: 10px; background: var(--accent);">
-          <span>Mark as Resolved / Fixed</span>
-        </button>
+        <div class="admin-resolve-container" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+          <label class="btn btn-outline" style="width: 100%; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; padding: 8px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <span id="admin-file-label-${rep.id}">Upload Proof of Fix</span>
+            <input type="file" id="admin-file-input-${rep.id}" class="admin-solved-file-input" data-id="${rep.id}" accept="image/*" style="display: none;">
+          </label>
+          <div id="admin-preview-container-${rep.id}" style="display: none; border-radius: 8px; overflow: hidden; max-height: 100px; border: 1px solid var(--border-color); margin-top: 4px;">
+            <img id="admin-preview-${rep.id}" style="width: 100%; height: 100%; object-fit: cover;">
+          </div>
+          <button class="btn btn-primary admin-action-btn" data-id="${rep.id}" data-action="fixed" style="width: 100%; padding: 10px; background: var(--accent);">
+            <span>Mark as Resolved / Fixed</span>
+          </button>
+        </div>
       `;
     } else {
       actionButtonsHTML = `
-        <div style="text-align: center; font-size: 0.8rem; font-weight: 700; color: var(--accent); display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 0;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          <span>Issue Resolved Successfully</span>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          ${rep.solvedPhotoUrl ? `
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Resolution Proof:</div>
+            <img src="${rep.solvedPhotoUrl}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.2);" alt="Resolution proof">
+          ` : ''}
+          <div style="text-align: center; font-size: 0.8rem; font-weight: 700; color: var(--accent); display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 0;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Issue Resolved Successfully</span>
+          </div>
         </div>
       `;
     }
@@ -640,6 +680,29 @@ function renderAdminReportsGrid() {
     `;
   }).join('');
 
+  // Handle image selections for resolved issues
+  document.querySelectorAll('.admin-solved-file-input').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const reportId = input.dataset.id;
+      const file = e.target.files[0];
+      if (file) {
+        const label = document.getElementById(`admin-file-label-${reportId}`);
+        if (label) label.textContent = file.name;
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = document.getElementById(`admin-preview-${reportId}`);
+          const container = document.getElementById(`admin-preview-container-${reportId}`);
+          if (img && container) {
+            img.src = ev.target.result;
+            container.style.display = 'block';
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  });
+
   document.querySelectorAll('.admin-action-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       const reportId = btn.dataset.id;
@@ -648,8 +711,16 @@ function renderAdminReportsGrid() {
       btn.disabled = true;
       btn.textContent = 'Processing Action...';
 
+      let solvedImageFile = null;
+      if (act === 'fixed') {
+        const fileInput = document.getElementById(`admin-file-input-${reportId}`);
+        if (fileInput && fileInput.files.length > 0) {
+          solvedImageFile = fileInput.files[0];
+        }
+      }
+
       try {
-        await updateReportStatus(reportId, act);
+        await updateReportStatus(reportId, act, solvedImageFile);
         await refreshIncidents();
       } catch (err) {
         alert("Failed to update status: " + err.message);
@@ -1027,8 +1098,58 @@ function setupEventListeners() {
     item.addEventListener('click', () => {
       navItems.forEach(i => i.classList.remove('active'));
       item.classList.add('active');
+      handleNavigation(item.id);
     });
   });
+}
+
+function handleNavigation(targetId) {
+  const mapSection = document.getElementById('map-section');
+  const feedSection = document.getElementById('feed-section');
+  
+  if (targetId === 'nav-item-feed') {
+    // Hide main screen sections
+    if (mapSection) mapSection.style.display = 'none';
+    if (citizenSectionsGrid) citizenSectionsGrid.style.display = 'none';
+    if (adminReportsSection) adminReportsSection.style.display = 'none';
+    if (adminStatsRow) adminStatsRow.style.display = 'none';
+
+    // Show public feed section
+    if (feedSection) feedSection.style.display = 'block';
+
+    // Update header
+    if (dashboardTitleText) dashboardTitleText.textContent = "Community Feed";
+    if (dashboardSubtitleText) dashboardSubtitleText.textContent = "Browse, discuss, and track community resolution progress";
+  } else {
+    // Hide feed section
+    if (feedSection) feedSection.style.display = 'none';
+
+    // Restore standard layout based on active role
+    if (session.role === 'admin') {
+      if (mapSection) mapSection.style.display = 'block';
+      if (adminReportsSection) adminReportsSection.style.display = 'block';
+      if (adminStatsRow) adminStatsRow.style.display = 'grid';
+      if (citizenSectionsGrid) citizenSectionsGrid.style.display = 'none';
+
+      if (dashboardTitleText) dashboardTitleText.textContent = "Municipal Command Center";
+      if (dashboardSubtitleText) dashboardSubtitleText.textContent = "Review filed complaints and mark items as fixed";
+    } else {
+      if (mapSection) mapSection.style.display = 'block';
+      if (citizenSectionsGrid) citizenSectionsGrid.style.display = 'grid';
+      if (adminReportsSection) adminReportsSection.style.display = 'none';
+      if (adminStatsRow) adminStatsRow.style.display = 'none';
+
+      if (dashboardTitleText) dashboardTitleText.textContent = "Citizen Command";
+      if (dashboardSubtitleText) dashboardSubtitleText.textContent = "Report hazards and track real-time resolution";
+    }
+
+    // Force Map resize invalidation to redraw tiles cleanly
+    if (map) {
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 100);
+    }
+  }
 }
 
 /* =========================================================================
@@ -1186,4 +1307,202 @@ function setupLoginCanvas() {
   window.addEventListener('resize', onResize);
   init();
   raf = requestAnimationFrame(draw);
+}
+
+function renderFeedSection() {
+  if (!feedReportsContainer) return;
+
+  if (feedReportsCount) {
+    feedReportsCount.textContent = `${allReports.length} ${allReports.length === 1 ? 'Incident' : 'Incidents'}`;
+  }
+
+  if (allReports.length === 0) {
+    feedReportsContainer.innerHTML = `
+      <p style="color: var(--text-muted); text-align: center; padding: 40px 0;">No community reports to show in the feed yet.</p>
+    `;
+    return;
+  }
+
+  feedReportsContainer.innerHTML = allReports.map(rep => {
+    const statusText = rep.status === 'fixed' ? 'Solved' : rep.status === 'review' ? 'Under Review' : 'Reported';
+    const statusClass = rep.status;
+
+    const publishDate = new Date(rep.timestamp).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    let resolvedDateHTML = '';
+    if (rep.status === 'fixed' && rep.solvedAt) {
+      const resolvedDate = new Date(rep.solvedAt).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      resolvedDateHTML = `
+        <div class="resolved-badge-banner" style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; margin-top: 10px; border-radius: 8px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); color: var(--accent); font-size: 0.8rem; font-weight: 700;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Resolved on ${resolvedDate}</span>
+        </div>
+      `;
+    }
+
+    let mediaHTML = '';
+    if (rep.status === 'fixed' && rep.solvedPhotoUrl) {
+      mediaHTML = `
+        <div class="feed-media-comparison" style="margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="media-side" style="position: relative;">
+            <span class="media-label before" style="position: absolute; top: 8px; left: 8px; z-index: 2; background: rgba(239, 68, 68, 0.85); color: white; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(4px);">BEFORE</span>
+            <img src="${rep.photoUrl}" alt="Before incident" class="feed-media-img" style="width: 100%; height: 180px; object-fit: cover; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05);">
+          </div>
+          <div class="media-side" style="position: relative;">
+            <span class="media-label after" style="position: absolute; top: 8px; left: 8px; z-index: 2; background: rgba(16, 185, 129, 0.85); color: white; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(4px);">AFTER</span>
+            <img src="${rep.solvedPhotoUrl}" alt="After resolved" class="feed-media-img" style="width: 100%; height: 180px; object-fit: cover; border-radius: 10px; border: 1px solid rgba(16, 185, 129, 0.2);">
+          </div>
+        </div>
+      `;
+    } else {
+      mediaHTML = `
+        <div class="feed-media-single" style="margin-top: 12px;">
+          <img src="${rep.photoUrl}" alt="Incident image" class="feed-media-img" style="width: 100%; height: 240px; object-fit: cover; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05);">
+        </div>
+      `;
+    }
+
+    const commentsListHTML = (rep.comments || []).map(comment => {
+      const commentTime = formatTimeAgo(comment.timestamp);
+      return `
+        <div class="comment-bubble" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 4px;">
+          <div class="comment-header" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: var(--text-muted);">
+            <span class="comment-user" style="color: var(--primary); font-weight: 600;">@${comment.username}</span>
+            <span class="comment-time">${commentTime}</span>
+          </div>
+          <p class="comment-text" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-secondary);">${comment.text}</p>
+        </div>
+      `;
+    }).join('');
+
+    const commentsContainerHTML = `
+      <div class="comments-section" data-id="${rep.id}" style="margin-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 16px;">
+        <div class="comments-title" style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 12px;">Comments (${(rep.comments || []).length})</div>
+        <div class="comments-list" id="comments-list-${rep.id}" style="max-height: 200px; overflow-y: auto; margin-bottom: 12px; padding-right: 4px;">
+          ${commentsListHTML || '<p class="no-comments-text" style="font-size: 0.78rem; color: var(--text-muted); text-align: center; padding: 12px 0;">No comments yet. Start the conversation!</p>'}
+        </div>
+        <form class="comment-form" data-id="${rep.id}" style="display: flex; gap: 8px;">
+          <input type="text" class="comment-input" placeholder="Write a comment..." required style="flex: 1; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px; font-size: 0.8rem; color: var(--text-primary); transition: all 0.2s;">
+          <button type="submit" class="btn btn-primary comment-submit-btn" style="padding: 8px 16px; font-size: 0.8rem; border-radius: 8px; border: none; cursor: pointer;">Post</button>
+        </form>
+      </div>
+    `;
+
+    return `
+      <div class="feed-card" id="feed-card-${rep.id}" style="background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 14px; transition: all var(--transition-normal); margin-bottom: 20px; width: 100%; box-sizing: border-box;">
+        <div class="feed-card-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div class="feed-user-info" style="display: flex; align-items: center; gap: 10px;">
+            <div class="feed-avatar" style="width: 32px; height: 32px; border-radius: 50%; background: rgba(0, 242, 254, 0.1); border: 1px solid var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--primary); font-size: 0.85rem;">${rep.username.charAt(0).toUpperCase()}</div>
+            <div style="display: flex; flex-direction: column;">
+              <span class="feed-username" style="font-size: 0.88rem; font-weight: 700; color: var(--text-primary);">@${rep.username}</span>
+              <span class="feed-date" style="font-size: 0.7rem; color: var(--text-muted);">Published ${publishDate}</span>
+            </div>
+          </div>
+          <span class="status-pill ${statusClass}">${statusText}</span>
+        </div>
+
+        <div class="feed-card-body" style="display: flex; flex-direction: column; gap: 6px;">
+          <h3 class="feed-title" style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin: 0;">${rep.title}</h3>
+          <p class="feed-desc" style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary); margin: 0;">${rep.description}</p>
+          ${resolvedDateHTML}
+          ${mediaHTML}
+        </div>
+
+        <div class="feed-card-footer" style="margin-top: 6px;">
+          <div style="display: flex; gap: 15px; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.03); padding-bottom: 8px;">
+            <a href="#" class="report-location-feed" data-lat="${rep.latitude}" data-lng="${rep.longitude}" style="color: var(--primary); text-decoration: none; display: flex; align-items: center; gap: 4px; font-weight: 600;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>Locate Radar Pin</span>
+            </a>
+          </div>
+          ${commentsContainerHTML}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Attach comment submit event listeners
+  document.querySelectorAll('.comment-form').forEach(form => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const reportId = form.dataset.id;
+      const input = form.querySelector('.comment-input');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const btn = form.querySelector('.comment-submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'Posting...';
+
+      const username = session.role === 'admin' ? 'Municipal Board' : (currentUser ? currentUser.username : session.username);
+
+      try {
+        const updatedComments = await addReportComment(reportId, username, text);
+        // Refresh local memory of allReports
+        allReports = await getReports();
+        
+        // Re-render comments list for this card
+        const listContainer = document.getElementById(`comments-list-${reportId}`);
+        if (listContainer) {
+          if (updatedComments.length === 0) {
+            listContainer.innerHTML = '<p class="no-comments-text" style="font-size: 0.78rem; color: var(--text-muted); text-align: center; padding: 12px 0;">No comments yet. Start the conversation!</p>';
+          } else {
+            listContainer.innerHTML = updatedComments.map(comment => {
+              return `
+                <div class="comment-bubble" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 4px;">
+                  <div class="comment-header" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: var(--text-muted);">
+                    <span class="comment-user" style="color: var(--primary); font-weight: 600;">@${comment.username}</span>
+                    <span class="comment-time">${formatTimeAgo(comment.timestamp)}</span>
+                  </div>
+                  <p class="comment-text" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-secondary);">${comment.text}</p>
+                </div>
+              `;
+            }).join('');
+          }
+        }
+        
+        // Update comments count in this feed card
+        const commentsTitle = form.parentElement.querySelector('.comments-title');
+        if (commentsTitle) {
+          commentsTitle.textContent = `Comments (${updatedComments.length})`;
+        }
+        
+        input.value = '';
+      } catch (err) {
+        alert("Failed to add comment: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Post';
+      }
+    });
+  });
+
+  // Attach location click listeners for feed card
+  document.querySelectorAll('.report-location-feed').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const lat = parseFloat(link.dataset.lat);
+      const lng = parseFloat(link.dataset.lng);
+      map.setView([lat, lng], 17);
+      
+      const markerIndex = allReports.findIndex(r => r.latitude === lat && r.longitude === lng);
+      if (markerIndex !== -1 && activeMarkers[markerIndex]) {
+        activeMarkers[markerIndex].openPopup();
+      }
+
+      document.getElementById('map-section').scrollIntoView({ behavior: 'smooth' });
+    });
+  });
 }
