@@ -335,7 +335,7 @@
 
     <!-- Report Incident Modal -->
     <div class="modal-backdrop" id="report-modal">
-      <div class="modal-content">
+      <div class="modal-content modal-large">
         <div class="modal-header">
           <h2>Report Community Issue</h2>
           <button class="btn-close" id="btn-close-modal">
@@ -343,55 +343,87 @@
           </button>
         </div>
         <form id="report-form">
-          <!-- Coordinate placeholders -->
-          <div class="form-row">
-            <div class="form-group">
-              <label for="report-lat">Latitude</label>
-              <input type="text" id="report-lat" class="form-control" readonly required>
+          <div class="modal-form-grid">
+            <!-- Left Side: Form Details -->
+            <div class="modal-form-left">
+              <div class="form-group">
+                <label for="report-type">Issue Category</label>
+                <select id="report-type" class="form-control" required>
+                  <option value="" disabled selected>Select issue type...</option>
+                  <option value="pothole">Pothole (Road Damage)</option>
+                  <option value="garbage">Garbage / Waste Pile-up</option>
+                  <option value="leakage">Water / Sewage Leakage</option>
+                  <option value="hazard">General Safety Hazard</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="report-title">Brief Summary</label>
+                <input type="text" id="report-title" class="form-control" placeholder="e.g. Broken water main, Deep pothole outside park" required>
+              </div>
+
+              <div class="form-group">
+                <label for="report-desc">Detailed Description</label>
+                <textarea id="report-desc" class="form-control" rows="3" placeholder="Provide extra details to help authorities identify or resolve the problem..." required></textarea>
+              </div>
+
+              <div class="form-group">
+                <label>Upload Incident Image</label>
+                <div class="file-upload-wrapper">
+                  <label for="report-image" class="file-upload-label" id="file-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    <span id="file-label-text">Select an image or snap a photo</span>
+                    <span style="font-size: 0.72rem; color: var(--text-muted);">If on mobile, tap to open camera</span>
+                  </label>
+                  <input type="file" id="report-image" class="file-upload-input" accept="image/*" required>
+                  <div id="image-preview-container" style="display: none; position: relative; margin-top: 10px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border-color);">
+                    <img id="image-preview" src="" alt="Preview" style="width: 100%; max-height: 180px; object-fit: cover; display: none;">
+                    <button type="button" id="btn-remove-image" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--transition-fast); backdrop-filter: blur(4px);">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="form-group">
-              <label for="report-lng">Longitude</label>
-              <input type="text" id="report-lng" class="form-control" readonly required>
-            </div>
-          </div>
 
-          <div class="form-group">
-            <label for="report-type">Issue Category</label>
-            <select id="report-type" class="form-control" required>
-              <option value="" disabled selected>Select issue type...</option>
-              <option value="pothole">Pothole (Road Damage)</option>
-              <option value="garbage">Garbage / Waste Pile-up</option>
-              <option value="leakage">Water / Sewage Leakage</option>
-              <option value="hazard">General Safety Hazard</option>
-            </select>
-          </div>
+            <!-- Right Side: Geotagging & Interactive Map -->
+            <div class="modal-form-right">
+              <div class="modal-map-container">
+                <label>Verify Incident Location</label>
+                <div id="report-modal-map"></div>
+                <p style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; margin-top: 4px;">
+                  📍 Geotagging will automatically pick your current position. You can also click anywhere on the map or drag the pin to mark the exact spot.
+                </p>
+                
+                <div class="address-readout-card">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  <span id="address-text" class="address-text">Geotagging location...</span>
+                </div>
+              </div>
 
-          <div class="form-group">
-            <label for="report-title">Brief Summary</label>
-            <input type="text" id="report-title" class="form-control" placeholder="e.g. Broken water main, Deep pothole outside park" required>
-          </div>
+              <!-- Coordinate display -->
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="report-lat">Latitude</label>
+                  <input type="text" id="report-lat" class="form-control" readonly required>
+                </div>
+                <div class="form-group">
+                  <label for="report-lng">Longitude</label>
+                  <input type="text" id="report-lng" class="form-control" readonly required>
+                </div>
+              </div>
 
-          <div class="form-group">
-            <label for="report-desc">Detailed Description</label>
-            <textarea id="report-desc" class="form-control" rows="3" placeholder="Provide extra details to help authorities identify or resolve the problem..." required></textarea>
-          </div>
-
-          <div class="form-group">
-            <label>Upload Incident Image</label>
-            <div class="file-upload-wrapper">
-              <label for="report-image" class="file-upload-label" id="file-label">
-                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                <span id="file-label-text" style="font-size: 0.85rem; font-weight: 500;">Select an image or snap a photo</span>
-              </label>
-              <input type="file" id="report-image" class="file-upload-input" accept="image/*" required>
-              <img id="image-preview" class="image-preview" src="" alt="Preview">
+              <button type="button" class="btn btn-ghost" id="modal-btn-locate" style="width: 100%; padding: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+                Locate Me
+              </button>
             </div>
           </div>
 
           <!-- Error container -->
-          <div id="form-error" style="color: #ef4444; font-size: 0.85rem; font-weight: 600; margin-bottom: 15px; display: none;"></div>
+          <div id="form-error" style="color: #ef4444; font-size: 0.85rem; font-weight: 600; margin-top: 15px; margin-bottom: 15px; display: none;"></div>
 
-          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px;" id="btn-submit-report">Submit Community Incident</button>
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; margin-top: 10px;" id="btn-submit-report">Submit Community Incident</button>
         </form>
       </div>
     </div>

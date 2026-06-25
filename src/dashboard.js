@@ -17,6 +17,10 @@ L.Icon.Default.mergeOptions({
 
 // App State
 let map = null;
+let modalMap = null;
+let modalMarker = null;
+let currentUserLat = null;
+let currentUserLng = null;
 let userReports = [];
 let allReports = [];
 let currentUser = null;
@@ -190,6 +194,17 @@ function setupAuthHandlers() {
           userId: 'admin',
           username: 'Municipal Board',
           role: 'admin'
+        };
+        localStorage.setItem('ch_session', JSON.stringify(session));
+        window.location.reload();
+        return;
+      }
+
+      if (email.toLowerCase() === 'citizen' && pass === 'citizen') {
+        session = {
+          userId: 'current_user',
+          username: 'You (Citizen Hero)',
+          role: 'citizen'
         };
         localStorage.setItem('ch_session', JSON.stringify(session));
         window.location.reload();
@@ -419,6 +434,8 @@ function locateUser(setView = true) {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
+        currentUserLat = latitude;
+        currentUserLng = longitude;
         if (setView && map) {
           map.setView([latitude, longitude], 15);
         }
@@ -691,25 +708,172 @@ async function loadLeaderboard() {
    MODAL & SUBMISSION FORM FLOW
    ========================================================================= */
 
+async function updateGeocodedAddress(lat, lng) {
+  const addressTextEl = document.getElementById('address-text');
+  if (!addressTextEl) return;
+
+  addressTextEl.textContent = 'Resolving address...';
+
+  try {
+    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
+      headers: {
+        'Accept-Language': 'en',
+        'User-Agent': 'CommunityHeroCivicApp/1.0'
+      }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data && data.display_name) {
+        const addr = data.address;
+        const mainLocation = addr.road || addr.suburb || addr.neighbourhood || addr.city_district || '';
+        const city = addr.city || addr.town || addr.village || addr.county || '';
+        const country = addr.country || '';
+        
+        let displayAddr = '';
+        if (mainLocation && city) {
+          displayAddr = `${mainLocation}, ${city}${country ? `, ${country}` : ''}`;
+        } else if (city) {
+          displayAddr = `${city}${country ? `, ${country}` : ''}`;
+        } else {
+          displayAddr = data.display_name.split(',').slice(0, 3).join(',').trim();
+        }
+
+        addressTextEl.textContent = displayAddr;
+        return;
+      }
+    }
+  } catch (error) {
+    console.warn("Real reverse geocoding failed, falling back to local Sector calculations:", error);
+  }
+
+  // Fallback to local Sector matching
+  const neighborhoods = [
+    { name: 'Sector 17 (City Center)', lat: 30.7410, lng: 76.7842 },
+    { name: 'Sector 22', lat: 30.7333, lng: 76.7725 },
+    { name: 'Sector 15', lat: 30.7508, lng: 76.7640 },
+    { name: 'Sector 35', lat: 30.7225, lng: 76.7680 },
+    { name: 'Sector 43', lat: 30.7126, lng: 76.7538 },
+    { name: 'Sector 8', lat: 30.7490, lng: 76.7910 },
+    { name: 'Industrial Area Phase 1', lat: 30.7075, lng: 76.8010 },
+    { name: 'Sukhna Lake Road', lat: 30.7420, lng: 76.8120 }
+  ];
+
+  let closest = neighborhoods[0];
+  let minDistance = Infinity;
+
+  neighborhoods.forEach(n => {
+    const dist = Math.sqrt(Math.pow(lat - n.lat, 2) + Math.pow(lng - n.lng, 2));
+    if (dist < minDistance) {
+      minDistance = dist;
+      closest = n;
+    }
+  });
+
+  const distanceInKm = minDistance * 111.32;
+  
+  let address = '';
+  if (distanceInKm < 0.2) {
+    address = `Directly in ${closest.name}, Chandigarh, India`;
+  } else if (distanceInKm < 0.8) {
+    address = `Near ${closest.name}, Chandigarh, India`;
+  } else {
+    address = `${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E — Outskirts, India`;
+  }
+
+  addressTextEl.textContent = address;
+}
+
+function initOrUpdateModalMap(lat, lng) {
+  const container = document.getElementById('report-modal-map');
+  if (!container) return;
+
+  if (!modalMap) {
+    modalMap = L.map('report-modal-map', {
+      zoomControl: true,
+      minZoom: 3,
+      maxZoom: 18
+    }).setView([lat, lng], 15);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(modalMap);
+
+    modalMarker = L.marker([lat, lng], {
+      draggable: true
+    }).addTo(modalMap);
+
+    modalMarker.on('drag', () => {
+      const latlng = modalMarker.getLatLng();
+      reportLatInput.value = latlng.lat.toFixed(6);
+      reportLngInput.value = latlng.lng.toFixed(6);
+    });
+
+    modalMarker.on('dragend', () => {
+      const latlng = modalMarker.getLatLng();
+      reportLatInput.value = latlng.lat.toFixed(6);
+      reportLngInput.value = latlng.lng.toFixed(6);
+      updateGeocodedAddress(latlng.lat, latlng.lng);
+    });
+
+    modalMap.on('click', (e) => {
+      const { lat: clickLat, lng: clickLng } = e.latlng;
+      modalMarker.setLatLng([clickLat, clickLng]);
+      reportLatInput.value = clickLat.toFixed(6);
+      reportLngInput.value = clickLng.toFixed(6);
+      updateGeocodedAddress(clickLat, clickLng);
+    });
+  } else {
+    modalMap.setView([lat, lng], 15);
+    modalMarker.setLatLng([lat, lng]);
+  }
+
+  modalMap.invalidateSize();
+}
+
 function openReportModal(lat = null, lng = null) {
   formError.style.display = 'none';
   reportForm.reset();
+  
+  const imagePreviewContainer = document.getElementById('image-preview-container');
+  if (imagePreviewContainer) {
+    imagePreviewContainer.style.display = 'none';
+  }
+  imagePreview.src = '';
   imagePreview.style.display = 'none';
   fileLabel.style.display = 'flex';
 
-  if (lat && lng) {
-    reportLatInput.value = lat.toFixed(6);
-    reportLngInput.value = lng.toFixed(6);
-  } else {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((pos) => {
-        reportLatInput.value = pos.coords.latitude.toFixed(6);
-        reportLngInput.value = pos.coords.longitude.toFixed(6);
-      });
-    }
-  }
+  const defaultLat = 30.7333;
+  const defaultLng = 76.7794;
+  
+  const targetLat = lat || currentUserLat || defaultLat;
+  const targetLng = lng || currentUserLng || defaultLng;
 
+  reportLatInput.value = targetLat.toFixed(6);
+  reportLngInput.value = targetLng.toFixed(6);
+  
+  updateGeocodedAddress(targetLat, targetLng);
   reportModal.classList.add('open');
+
+  setTimeout(() => {
+    initOrUpdateModalMap(targetLat, targetLng);
+  }, 350);
+
+  // If we don't have any location yet (pre-detected or clicked), fetch it now
+  if (!lat && !lng && !currentUserLat && navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition((pos) => {
+      const currentLat = pos.coords.latitude;
+      const currentLng = pos.coords.longitude;
+      currentUserLat = currentLat;
+      currentUserLng = currentLng;
+      reportLatInput.value = currentLat.toFixed(6);
+      reportLngInput.value = currentLng.toFixed(6);
+      updateGeocodedAddress(currentLat, currentLng);
+      initOrUpdateModalMap(currentLat, currentLng);
+    }, (err) => {
+      console.warn("Geolocation in modal failed", err);
+    }, { enableHighAccuracy: true, timeout: 5000 });
+  }
 }
 
 function closeReportModal() {
@@ -765,14 +929,62 @@ function setupEventListeners() {
       const file = e.target.files[0];
       if (file) {
         const reader = new FileReader();
-        reader.onload = (e) => {
-          imagePreview.src = e.target.result;
+        reader.onload = (ev) => {
+          imagePreview.src = ev.target.result;
           imagePreview.style.display = 'block';
+          const imagePreviewContainer = document.getElementById('image-preview-container');
+          if (imagePreviewContainer) {
+            imagePreviewContainer.style.display = 'block';
+          }
           fileLabel.style.display = 'none';
         };
         reader.readAsDataURL(file);
       }
     });
+
+    const btnRemoveImage = document.getElementById('btn-remove-image');
+    if (btnRemoveImage) {
+      btnRemoveImage.addEventListener('click', () => {
+        fileInput.value = '';
+        const imagePreviewContainer = document.getElementById('image-preview-container');
+        if (imagePreviewContainer) {
+          imagePreviewContainer.style.display = 'none';
+        }
+        imagePreview.src = '';
+        imagePreview.style.display = 'none';
+        fileLabel.style.display = 'flex';
+      });
+    }
+
+    const modalBtnLocate = document.getElementById('modal-btn-locate');
+    if (modalBtnLocate) {
+      modalBtnLocate.addEventListener('click', () => {
+        if (navigator.geolocation) {
+          modalBtnLocate.disabled = true;
+          modalBtnLocate.innerHTML = `<svg class="spin-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg> Geotagging...`;
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              const currentLat = pos.coords.latitude;
+              const currentLng = pos.coords.longitude;
+              currentUserLat = currentLat;
+              currentUserLng = currentLng;
+              reportLatInput.value = currentLat.toFixed(6);
+              reportLngInput.value = currentLng.toFixed(6);
+              updateGeocodedAddress(currentLat, currentLng);
+              initOrUpdateModalMap(currentLat, currentLng);
+              modalBtnLocate.disabled = false;
+              modalBtnLocate.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg> Locate Me`;
+            },
+            (error) => {
+              console.error("Locate error", error);
+              modalBtnLocate.disabled = false;
+              modalBtnLocate.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg> Locate Me`;
+            },
+            { enableHighAccuracy: true, timeout: 5000 }
+          );
+        }
+      });
+    }
 
     reportForm.addEventListener('submit', async (e) => {
       e.preventDefault();
