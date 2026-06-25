@@ -521,7 +521,7 @@ async function refreshIncidents() {
         <p style="margin: 0 0 8px; font-size: 0.8rem; color: #475569;">${report.description}</p>
         <img src="${report.photoUrl}" style="width: 100%; height: 90px; object-fit: cover; border-radius: 6px; margin-bottom: 6px;" alt="incident">
         <div style="font-size: 0.7rem; color: #64748b; display: flex; justify-content: space-between;">
-          <span>By @${report.username}</span>
+          <span class="view-user-profile-popup" data-username="${report.username}" style="cursor: pointer; color: #0ea5e9; font-weight: 600;">By @${report.username}</span>
           <span>${formatTimeAgo(report.timestamp)}</span>
         </div>
         ${adminActionHTML}
@@ -542,6 +542,13 @@ async function refreshIncidents() {
           await refreshIncidents();
         });
       }
+      // Attach popup username click
+      document.querySelectorAll('.view-user-profile-popup').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openUserProfileModal(el.dataset.username);
+        });
+      });
     });
 
     activeMarkers.push(marker);
@@ -773,6 +780,14 @@ function renderAdminReportsGrid() {
       }
 
       document.getElementById('map-section').scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+
+  // Admin reporter username click -> open profile modal
+  document.querySelectorAll('.view-user-profile-admin').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openUserProfileModal(el.dataset.username);
     });
   });
 }
@@ -1745,7 +1760,7 @@ async function openUserProfileModal(username) {
         item.addEventListener('click', () => {
           const lat = parseFloat(item.dataset.lat);
           const lng = parseFloat(item.dataset.lng);
-          modal.classList.remove('active');
+          modal.classList.remove('open');
           map.setView([lat, lng], 17);
           const markerIndex = allReports.findIndex(r => r.latitude === lat && r.longitude === lng);
           if (markerIndex !== -1 && activeMarkers[markerIndex]) {
@@ -1757,7 +1772,7 @@ async function openUserProfileModal(username) {
     }
   }
 
-  modal.classList.add('active');
+  modal.classList.add('open');
 }
 
 // Global modal binder execution
@@ -1766,10 +1781,10 @@ function setupUserProfileModal() {
   const modal = document.getElementById('user-profile-modal');
   if (btnClose && modal) {
     btnClose.addEventListener('click', () => {
-      modal.classList.remove('active');
+      modal.classList.remove('open');
     });
     modal.addEventListener('click', (e) => {
-      if (e.target === modal) modal.classList.remove('active');
+      if (e.target === modal) modal.classList.remove('open');
     });
   }
 }
