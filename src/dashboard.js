@@ -398,6 +398,9 @@ async function loadUserData() {
     userCard.className = 'user-card';
     userCard.style.borderColor = '';
     userCard.innerHTML = `
+      <button id="btn-edit-profile" class="btn-edit-profile" title="Edit Profile" style="position: absolute; top: 12px; right: 12px; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
       <div class="user-avatar-container">
         <div class="user-avatar">${avatarChar}</div>
         <span class="user-badge-level">LV ${Math.floor(currentUser.points / 100) + 1}</span>
@@ -419,6 +422,16 @@ async function loadUserData() {
         </div>
       </div>
     `;
+
+    const btnEditProfile = document.getElementById('btn-edit-profile');
+    if (btnEditProfile) {
+      btnEditProfile.addEventListener('click', (e) => {
+        e.preventDefault();
+        const navItems = document.querySelectorAll('.sidebar-nav li');
+        navItems.forEach(i => i.classList.remove('active'));
+        handleNavigation('nav-item-profile');
+      });
+    }
   }
 }
 
@@ -1091,6 +1104,54 @@ function setupEventListeners() {
         btnSubmitReport.textContent = 'Submit Community Incident';
       }
     });
+
+    const profileEditForm = document.getElementById('profile-edit-form');
+    if (profileEditForm) {
+      profileEditForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const usernameInput = document.getElementById('profile-username');
+        const bioInput = document.getElementById('profile-bio');
+        const errorDiv = document.getElementById('profile-error');
+        const successDiv = document.getElementById('profile-success');
+        const saveBtn = document.getElementById('btn-save-profile');
+
+        if (errorDiv) errorDiv.style.display = 'none';
+        if (successDiv) successDiv.style.display = 'none';
+
+        const newUsername = usernameInput.value.trim();
+        const newBio = bioInput.value.trim();
+
+        if (!newUsername) {
+          if (errorDiv) {
+            errorDiv.textContent = "Username is required.";
+            errorDiv.style.display = 'block';
+          }
+          return;
+        }
+
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving Profile...';
+
+        try {
+          const updatedProfile = await updateUserProfile(session.userId, { username: newUsername, bio: newBio });
+          if (updatedProfile) {
+            currentUser = updatedProfile;
+            if (successDiv) successDiv.style.display = 'block';
+            await loadUserData(); // reload sidebar username/avatar
+          } else {
+            throw new Error("Update failed.");
+          }
+        } catch (err) {
+          if (errorDiv) {
+            errorDiv.textContent = err.message || "Failed to update profile changes.";
+            errorDiv.style.display = 'block';
+          }
+        } finally {
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Save Profile Changes';
+        }
+      });
+    }
   }
 
   const navItems = document.querySelectorAll('.sidebar-nav li');
@@ -1106,13 +1167,15 @@ function setupEventListeners() {
 function handleNavigation(targetId) {
   const mapSection = document.getElementById('map-section');
   const feedSection = document.getElementById('feed-section');
+  const profileSection = document.getElementById('profile-section');
   
   if (targetId === 'nav-item-feed') {
-    // Hide main screen sections
+    // Hide other sections
     if (mapSection) mapSection.style.display = 'none';
     if (citizenSectionsGrid) citizenSectionsGrid.style.display = 'none';
     if (adminReportsSection) adminReportsSection.style.display = 'none';
     if (adminStatsRow) adminStatsRow.style.display = 'none';
+    if (profileSection) profileSection.style.display = 'none';
 
     // Show public feed section
     if (feedSection) feedSection.style.display = 'block';
@@ -1120,9 +1183,37 @@ function handleNavigation(targetId) {
     // Update header
     if (dashboardTitleText) dashboardTitleText.textContent = "Community Feed";
     if (dashboardSubtitleText) dashboardSubtitleText.textContent = "Browse, discuss, and track community resolution progress";
-  } else {
-    // Hide feed section
+  } else if (targetId === 'nav-item-profile') {
+    // Hide other sections
+    if (mapSection) mapSection.style.display = 'none';
+    if (citizenSectionsGrid) citizenSectionsGrid.style.display = 'none';
+    if (adminReportsSection) adminReportsSection.style.display = 'none';
+    if (adminStatsRow) adminStatsRow.style.display = 'none';
     if (feedSection) feedSection.style.display = 'none';
+
+    // Show profile section
+    if (profileSection) {
+      profileSection.style.display = 'block';
+
+      // Load inputs
+      const usernameInput = document.getElementById('profile-username');
+      const bioInput = document.getElementById('profile-bio');
+      if (usernameInput && currentUser) usernameInput.value = currentUser.username || '';
+      if (bioInput && currentUser) bioInput.value = currentUser.bio || '';
+
+      const errDiv = document.getElementById('profile-error');
+      const succDiv = document.getElementById('profile-success');
+      if (errDiv) errDiv.style.display = 'none';
+      if (succDiv) succDiv.style.display = 'none';
+    }
+
+    // Update header
+    if (dashboardTitleText) dashboardTitleText.textContent = "Edit Hero Profile";
+    if (dashboardSubtitleText) dashboardSubtitleText.textContent = "Manage your community public username and action biography";
+  } else {
+    // Hide feed & profile sections
+    if (feedSection) feedSection.style.display = 'none';
+    if (profileSection) profileSection.style.display = 'none';
 
     // Restore standard layout based on active role
     if (session.role === 'admin') {
