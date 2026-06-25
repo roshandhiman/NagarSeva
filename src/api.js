@@ -24,71 +24,142 @@ if (supabaseUrl && supabaseAnonKey && supabaseUrl !== "YOUR_SUPABASE_URL") {
 
 // Preseeded Mock Users
 const MOCK_USERS = [
-  { userId: 'user1', username: 'AmanRoy', points: 350, badges: ['Pioneer', 'Pothole Slayer'] },
-  { userId: 'user2', username: 'Sarah99', points: 280, badges: ['Eco Warrior'] },
-  { userId: 'user3', username: 'VarunD', points: 190, badges: ['Leak Watcher'] },
-  { userId: 'user4', username: 'Nisha21', points: 150, badges: ['Novice'] },
-  { userId: 'current_user', username: 'You (Citizen Hero)', points: 40, badges: ['First Responder'] }
+  {
+    userId: 'user1',
+    username: 'AmanRoy',
+    points: 420,
+    badges: ['Pioneer', 'Pothole Slayer', 'Street Sentinel', 'Municipal Magnet'],
+    bio: 'Civic-minded engineer based in Chandigarh. Passionate about road safety and pothole reporting.'
+  },
+  {
+    userId: 'user2',
+    username: 'PriyaSharma',
+    points: 280,
+    badges: ['Eco Warrior', 'Street Sentinel'],
+    bio: 'Environmental volunteer in Delhi. Dedicated to waste management and clean neighborhood parks.'
+  },
+  {
+    userId: 'user3',
+    username: 'KabirSingh',
+    points: 190,
+    badges: ['Leak Watcher', 'First Responder'],
+    bio: 'Active citizen from Chandigarh outskirts. Love organizing clean-up drives and reporting water leaks.'
+  },
+  {
+    userId: 'user4',
+    username: 'DivyaPatel',
+    points: 150,
+    badges: ['Novice', 'First Responder'],
+    bio: 'Student activist helping keep Sector 15 green and clean. Always ready to raise alerts for community issues.'
+  },
+  {
+    userId: 'user5',
+    username: 'RohanSharma',
+    points: 95,
+    badges: ['First Responder'],
+    bio: 'Resident of Chandigarh. Enthusiastic helper reporting electrical and public hazards.'
+  },
+  {
+    userId: 'current_user',
+    username: 'You (Citizen Hero)',
+    points: 40,
+    badges: ['First Responder'],
+    bio: 'Proud community member reporting issues to keep our streets safe and clean.'
+  }
 ];
 
 // Preseeded Mock Reports
 const MOCK_REPORTS = [
   {
     id: 'report_1',
-    title: 'Deep crater on Main Flyover Road',
+    title: 'Deep hazardous pothole near Sector 17 Market',
     type: 'pothole',
-    description: 'A deep pothole in the middle of the road causing vehicles to swerve dangerously.',
-    latitude: 28.6139,
-    longitude: 77.2090,
-    photoUrl: 'https://images.unsplash.com/photo-1515162305285-0293e4767cc2?auto=format&fit=crop&w=600&q=80',
+    description: 'A deep pothole right at the entry curve of Sector 17 Market. It is extremely dangerous for two-wheelers during night time.',
+    latitude: 30.7398,
+    longitude: 76.7827,
+    photoUrl: '/mock_images/pothole_before.png',
     status: 'fixed',
-    timestamp: Date.now() - 3600000 * 24, // 1 day ago
+    timestamp: Date.now() - 3600000 * 48, // 48 hours ago
     userId: 'user1',
-    username: 'AmanRoy'
+    username: 'AmanRoy',
+    solvedPhotoUrl: '/mock_images/pothole_after.png',
+    solvedAt: Date.now() - 3600000 * 18, // 18 hours ago
+    comments: [
+      { username: 'KabirSingh', text: 'Spotted this too, glad you reported it Aman. Thanks!', timestamp: Date.now() - 3600000 * 40 },
+      { username: 'AmanRoy', text: 'Yes, it was causing major issues. Glad the municipal corp resolved it within a day!', timestamp: Date.now() - 3600000 * 17 },
+      { username: 'PriyaSharma', text: 'Wow, that patch looks very solid and neat. Great job team.', timestamp: Date.now() - 3600000 * 15 }
+    ]
   },
   {
     id: 'report_2',
-    title: 'Garbage dump near Sector 4 Park',
+    title: 'Overflowing garbage bin near Sector 22 Plaza',
     type: 'garbage',
-    description: 'A massive pile of uncollected garbage bags emitting foul smell right next to the park gate.',
-    latitude: 28.6200,
-    longitude: 77.2150,
-    photoUrl: 'https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?auto=format&fit=crop&w=600&q=80',
+    description: 'The main trash bin near Sector 22 shopping plaza is overflowing with commercial waste. Stray animals are scattering trash across the street.',
+    latitude: 30.7295,
+    longitude: 76.7645,
+    photoUrl: '/mock_images/garbage_bin.png',
     status: 'reported',
-    timestamp: Date.now() - 3600000 * 2, // 2 hours ago
+    timestamp: Date.now() - 3600000 * 3, // 3 hours ago
     userId: 'user2',
-    username: 'Sarah99'
+    username: 'PriyaSharma',
+    comments: [
+      { username: 'RohanSharma', text: 'Just walked by and it smells awful. I have registered a complaint too.', timestamp: Date.now() - 3600000 * 2 },
+      { username: 'DivyaPatel', text: 'This dumpster needs daily clearing, especially on weekends.', timestamp: Date.now() - 3600000 * 1 }
+    ]
   },
   {
     id: 'report_3',
-    title: 'Water pipe leakage on 8th Street',
+    title: 'Drinking water pipe leakage on Sector 35 Outer road',
     type: 'leakage',
-    description: 'High pressure drinking water pipe broken, wasting clean water onto the street.',
-    latitude: 28.6080,
-    longitude: 77.2020,
-    photoUrl: 'https://images.unsplash.com/photo-1542013936693-8848e574047e?auto=format&fit=crop&w=600&q=80',
-    status: 'review',
-    timestamp: Date.now() - 1800000, // 30 mins ago
+    description: 'A major leakage in the main supply pipe is wasting thousands of gallons of clean drinking water. Water has accumulated on the side road.',
+    latitude: 30.7225,
+    longitude: 76.7510,
+    photoUrl: '/mock_images/leakage_before.png',
+    status: 'fixed',
+    timestamp: Date.now() - 3600000 * 72, // 3 days ago
     userId: 'user3',
-    username: 'VarunD'
+    username: 'KabirSingh',
+    solvedPhotoUrl: '/mock_images/leakage_after.png',
+    solvedAt: Date.now() - 3600000 * 36, // 36 hours ago
+    comments: [
+      { username: 'AmanRoy', text: 'This is a serious waste. Hope the water supply division is informed.', timestamp: Date.now() - 3600000 * 60 },
+      { username: 'KabirSingh', text: 'I called their hotline right after posting here. They arrived in a few hours and repaired the main seal!', timestamp: Date.now() - 3600000 * 35 }
+    ]
+  },
+  {
+    id: 'report_4',
+    title: 'Exposed high-voltage wires on street lamp post',
+    type: 'hazard',
+    description: 'The base panel of the street lamp post at the Sector 8 crossing is completely open, exposing live electrical wires at a height children can touch.',
+    latitude: 30.7512,
+    longitude: 76.7932,
+    photoUrl: '/mock_images/exposed_wires.png',
+    status: 'review',
+    timestamp: Date.now() - 3600000 * 5, // 5 hours ago
+    userId: 'user5',
+    username: 'RohanSharma',
+    comments: [
+      { username: 'AmanRoy', text: 'This is extremely hazardous! Especially with the monsoon rain starting.', timestamp: Date.now() - 3600000 * 4 },
+      { username: 'KabirSingh', text: 'Adding a plastic wrap marker so people stay away. Hope they fix this on high priority!', timestamp: Date.now() - 3600000 * 3 }
+    ]
   }
 ];
 
 // Helper to initialize local storage
 function initLocalMock() {
+  const seedKey = 'ch_mock_seeded_v4';
+  if (localStorage.getItem(seedKey) !== 'true') {
+    localStorage.removeItem('ch_users');
+    localStorage.removeItem('ch_reports');
+    localStorage.removeItem('ch_local_bios'); // clear custom local bios so we use fresh seed
+    localStorage.setItem(seedKey, 'true');
+  }
+
   if (!localStorage.getItem('ch_users')) {
     localStorage.setItem('ch_users', JSON.stringify(MOCK_USERS));
   }
   if (!localStorage.getItem('ch_reports')) {
-    const preseeded = MOCK_REPORTS.map(r => ({
-      comments: r.id === 'report_1' ? [
-        { username: 'Sarah99', text: 'Awesome job fixing this so quickly! The road is safe now.', timestamp: Date.now() - 3600000 * 2 }
-      ] : [],
-      solvedPhotoUrl: r.status === 'fixed' ? 'https://images.unsplash.com/photo-1599740831464-54fd0a36bcfa?auto=format&fit=crop&w=600&q=80' : null,
-      solvedAt: r.status === 'fixed' ? r.timestamp + 3600000 * 3 : null,
-      ...r
-    }));
-    localStorage.setItem('ch_reports', JSON.stringify(preseeded));
+    localStorage.setItem('ch_reports', JSON.stringify(MOCK_REPORTS));
   } else {
     const current = JSON.parse(localStorage.getItem('ch_reports')) || [];
     let updated = false;
@@ -452,9 +523,22 @@ export async function updateUserProfile(userId, { username, bio }) {
   return users[userIndex];
 }
 
+// Helper to check if current session should bypass Supabase (e.g. citizen/admin login)
+function shouldBypassSupabase() {
+  try {
+    const session = JSON.parse(localStorage.getItem('ch_session') || 'null');
+    if (session && (session.userId === 'current_user' || session.userId === 'admin' || (session.userId && session.userId.startsWith('user')))) {
+      return true;
+    }
+  } catch (e) {
+    console.error("Error reading session for shouldBypassSupabase", e);
+  }
+  return false;
+}
+
 // Get the top users sorted by points
 export async function getLeaderboard() {
-  if (useSupabase) {
+  if (useSupabase && !shouldBypassSupabase()) {
     try {
       const { data, error } = await supabase
         .from('users')
@@ -481,7 +565,7 @@ export async function getLeaderboard() {
 
 // Fetch all reported incidents
 export async function getReports() {
-  if (useSupabase) {
+  if (useSupabase && !shouldBypassSupabase()) {
     try {
       const { data, error } = await supabase
         .from('reports')
@@ -538,7 +622,7 @@ export async function submitReport(reportData, imageFile = null) {
   let photoUrl = 'https://images.unsplash.com/photo-1584824486509-112e4181ff6b?auto=format&fit=crop&w=600&q=80'; // fallback
 
   if (imageFile) {
-    if (useSupabase) {
+    if (useSupabase && !shouldBypassSupabase()) {
       try {
         const fileExt = imageFile.name.split('.').pop();
         const fileName = `${Date.now()}_${Math.random()}.${fileExt}`;
@@ -578,7 +662,7 @@ export async function submitReport(reportData, imageFile = null) {
     username: reportData.username || 'You (Citizen Hero)'
   };
 
-  if (useSupabase) {
+  if (useSupabase && !shouldBypassSupabase()) {
     try {
       const { data, error } = await supabase
         .from('reports')
@@ -636,7 +720,7 @@ export async function updateReportStatus(reportId, newStatus, solvedImageFile = 
   if (newStatus === 'fixed') {
     solvedAt = Date.now();
     if (solvedImageFile) {
-      if (useSupabase) {
+      if (useSupabase && !shouldBypassSupabase() && !reportId.startsWith('report_')) {
         try {
           const fileExt = solvedImageFile.name.split('.').pop();
           const fileName = `${Date.now()}_solved_${Math.random()}.${fileExt}`;
@@ -664,7 +748,7 @@ export async function updateReportStatus(reportId, newStatus, solvedImageFile = 
     }
   }
 
-  if (useSupabase) {
+  if (useSupabase && !shouldBypassSupabase() && !reportId.startsWith('report_')) {
     try {
       const updateData = { status: newStatus };
       if (newStatus === 'fixed') {
@@ -723,7 +807,7 @@ export async function addReportComment(reportId, username, text) {
     timestamp: Date.now()
   };
 
-  if (useSupabase) {
+  if (useSupabase && !shouldBypassSupabase() && !reportId.startsWith('report_')) {
     try {
       // Fetch current comments first
       const { data: report, error: fetchError } = await supabase
@@ -768,7 +852,7 @@ export async function addReportComment(reportId, username, text) {
 
 // Helper to award points and calculate badge upgrades
 async function updateUserPoints(userId, pointsToAdd) {
-  if (useSupabase) {
+  if (useSupabase && userId !== 'current_user' && !userId.startsWith('user') && userId !== 'admin') {
     try {
       const { data: user } = await supabase
         .from('users')
