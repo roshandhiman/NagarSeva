@@ -1,7 +1,7 @@
 import './style.css';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { getUserProfile, getLeaderboard, getReports, submitReport, updateReportStatus, signIn, signUp, signOut, getCurrentSession, signInWithGoogle, ensureUserProfile, addReportComment, updateUserProfile } from './api.js';
+import { supabase, useSupabase, getUserProfile, getLeaderboard, getReports, submitReport, updateReportStatus, signIn, signUp, signOut, getCurrentSession, signInWithGoogle, ensureUserProfile, addReportComment, updateUserProfile } from './api.js';
 import { initCursor } from './cursor.js';
 import { initChatbot, setChatReports, checkDuplicateReport } from './ai.js';
 
