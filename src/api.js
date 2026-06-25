@@ -87,7 +87,13 @@ const MOCK_REPORTS = [
     comments: [
       { username: 'KabirSingh', text: 'Spotted this too, glad you reported it Aman. Thanks!', timestamp: Date.now() - 3600000 * 40 },
       { username: 'AmanRoy', text: 'Yes, it was causing major issues. Glad the municipal corp resolved it within a day!', timestamp: Date.now() - 3600000 * 17 },
-      { username: 'PriyaSharma', text: 'Wow, that patch looks very solid and neat. Great job team.', timestamp: Date.now() - 3600000 * 15 }
+      { username: 'PriyaSharma', text: 'Wow, that patch looks very solid and neat. Great job team.', timestamp: Date.now() - 3600000 * 15 },
+      {
+        username: 'Municipal Board',
+        text: 'Official Resolution Update: This issue has been successfully resolved and fixed! Thank you for keeping our community safe.',
+        photoUrl: '/mock_images/pothole_after.png',
+        timestamp: Date.now() - 3600000 * 18
+      }
     ]
   },
   {
@@ -123,7 +129,13 @@ const MOCK_REPORTS = [
     solvedAt: Date.now() - 3600000 * 36, // 36 hours ago
     comments: [
       { username: 'AmanRoy', text: 'This is a serious waste. Hope the water supply division is informed.', timestamp: Date.now() - 3600000 * 60 },
-      { username: 'KabirSingh', text: 'I called their hotline right after posting here. They arrived in a few hours and repaired the main seal!', timestamp: Date.now() - 3600000 * 35 }
+      { username: 'KabirSingh', text: 'I called their hotline right after posting here. They arrived in a few hours and repaired the main seal!', timestamp: Date.now() - 3600000 * 35 },
+      {
+        username: 'Municipal Board',
+        text: 'Official Resolution Update: This issue has been successfully resolved and fixed! Thank you for keeping our community safe.',
+        photoUrl: '/mock_images/leakage_after.png',
+        timestamp: Date.now() - 3600000 * 36
+      }
     ]
   },
   {
@@ -147,7 +159,7 @@ const MOCK_REPORTS = [
 
 // Helper to initialize local storage
 function initLocalMock() {
-  const seedKey = 'ch_mock_seeded_v4';
+  const seedKey = 'ch_mock_seeded_v5';
   if (localStorage.getItem(seedKey) !== 'true') {
     localStorage.removeItem('ch_users');
     localStorage.removeItem('ch_reports');
@@ -573,22 +585,33 @@ export async function getReports() {
         .order('timestamp', { ascending: false });
         
       if (data && !error) {
-        return data.map(d => ({
-          id: d.id,
-          title: d.title,
-          type: d.type,
-          description: d.description,
-          latitude: d.latitude,
-          longitude: d.longitude,
-          photoUrl: d.photo_url,
-          status: d.status,
-          timestamp: d.timestamp,
-          userId: d.user_id,
-          username: d.username,
-          solvedPhotoUrl: d.solved_photo_url || null,
-          solvedAt: d.solved_at || null,
-          comments: d.comments || []
-        }));
+        const seenIds = new Set();
+        const seenTitles = new Set();
+        const uniqueReports = [];
+        data.forEach(d => {
+          const titleKey = `${d.title}_${d.timestamp}`;
+          if (!seenIds.has(d.id) && !seenTitles.has(titleKey)) {
+            seenIds.add(d.id);
+            seenTitles.add(titleKey);
+            uniqueReports.push({
+              id: d.id,
+              title: d.title,
+              type: d.type,
+              description: d.description,
+              latitude: d.latitude,
+              longitude: d.longitude,
+              photoUrl: d.photo_url,
+              status: d.status,
+              timestamp: d.timestamp,
+              userId: d.user_id,
+              username: d.username,
+              solvedPhotoUrl: d.solved_photo_url || null,
+              solvedAt: d.solved_at || null,
+              comments: d.comments || []
+            });
+          }
+        });
+        return uniqueReports;
       }
     } catch (e) {
       console.error("Supabase getReports failed, falling back to mock", e);
@@ -596,8 +619,19 @@ export async function getReports() {
   }
 
   // Local storage mock
-  const reports = JSON.parse(localStorage.getItem('ch_reports'));
-  return [...reports].sort((a, b) => b.timestamp - a.timestamp);
+  const reports = JSON.parse(localStorage.getItem('ch_reports')) || [];
+  const seenIds = new Set();
+  const seenTitles = new Set();
+  const uniqueReports = [];
+  reports.forEach(r => {
+    const titleKey = `${r.title}_${r.timestamp}`;
+    if (!seenIds.has(r.id) && !seenTitles.has(titleKey)) {
+      seenIds.add(r.id);
+      seenTitles.add(titleKey);
+      uniqueReports.push(r);
+    }
+  });
+  return uniqueReports.sort((a, b) => b.timestamp - a.timestamp);
 }
 
 // Check if a report already exists within a 50m radius
@@ -768,6 +802,31 @@ export async function updateReportStatus(reportId, newStatus, solvedImageFile = 
       if (data && !error) {
         if (newStatus === 'fixed') {
           await updateUserPoints(data.user_id, 100);
+
+          // Auto-post official resolution comment from admin on the post with the fixed image URL
+          try {
+            const { data: reportData, error: checkError } = await supabase
+              .from('reports')
+              .select('comments')
+              .eq('id', reportId)
+              .single();
+
+            if (reportData && !checkError) {
+              const currentComments = reportData.comments || [];
+              const adminComment = {
+                username: 'Municipal Board',
+                text: 'Official Resolution Update: This issue has been successfully resolved and fixed! Thank you for keeping our community safe.',
+                photoUrl: solvedPhotoUrl,
+                timestamp: Date.now()
+              };
+              await supabase
+                .from('reports')
+                .update({ comments: [...currentComments, adminComment] })
+                .eq('id', reportId);
+            }
+          } catch (commentErr) {
+            console.warn("Could not auto-post resolution comment (comments column may be missing):", commentErr);
+          }
         }
         return true;
       }
@@ -786,6 +845,17 @@ export async function updateReportStatus(reportId, newStatus, solvedImageFile = 
       if (solvedPhotoUrl) {
         reports[reportIndex].solvedPhotoUrl = solvedPhotoUrl;
       }
+      
+      // Auto-post official admin comment with solved photo in LocalStorage mock
+      if (!reports[reportIndex].comments) {
+        reports[reportIndex].comments = [];
+      }
+      reports[reportIndex].comments.push({
+        username: 'Municipal Board',
+        text: 'Official Resolution Update: This issue has been successfully resolved and fixed! Thank you for keeping our community safe.',
+        photoUrl: solvedPhotoUrl,
+        timestamp: Date.now()
+      });
     }
     localStorage.setItem('ch_reports', JSON.stringify(reports));
 

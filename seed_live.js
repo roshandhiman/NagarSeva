@@ -165,7 +165,13 @@ async function run() {
       comments: [
         { username: 'KabirSingh', text: 'Spotted this too, glad you reported it Aman. Thanks!', timestamp: now - 3600000 * 40 },
         { username: 'AmanRoy', text: 'Yes, it was causing major issues. Glad the municipal corp resolved it within a day!', timestamp: now - 3600000 * 17 },
-        { username: 'PriyaSharma', text: 'Wow, that patch looks very solid and neat. Great job team.', timestamp: now - 3600000 * 15 }
+        { username: 'PriyaSharma', text: 'Wow, that patch looks very solid and neat. Great job team.', timestamp: now - 3600000 * 15 },
+        {
+          username: 'Municipal Board',
+          text: 'Official Resolution Update: This issue has been successfully resolved and fixed! Thank you for keeping our community safe.',
+          photoUrl: imageUrls['pothole_after'] || '/mock_images/pothole_after.png',
+          timestamp: now - 3600000 * 18
+        }
       ]
     },
     {
@@ -199,7 +205,13 @@ async function run() {
       solved_at: now - 3600000 * 36,
       comments: [
         { username: 'AmanRoy', text: 'This is a serious waste. Hope the water supply division is informed.', timestamp: now - 3600000 * 60 },
-        { username: 'KabirSingh', text: 'I called their hotline right after posting here. They arrived in a few hours and repaired the main seal!', timestamp: now - 3600000 * 35 }
+        { username: 'KabirSingh', text: 'I called their hotline right after posting here. They arrived in a few hours and repaired the main seal!', timestamp: now - 3600000 * 35 },
+        {
+          username: 'Municipal Board',
+          text: 'Official Resolution Update: This issue has been successfully resolved and fixed! Thank you for keeping our community safe.',
+          photoUrl: imageUrls['leakage_after'] || '/mock_images/leakage_after.png',
+          timestamp: now - 3600000 * 36
+        }
       ]
     },
     {

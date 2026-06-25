@@ -1474,12 +1474,17 @@ function renderFeedSection() {
     const commentsListHTML = (rep.comments || []).map(comment => {
       const commentTime = formatTimeAgo(comment.timestamp);
       return `
-        <div class="comment-bubble" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 4px;">
+        <div class="comment-bubble" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px;">
           <div class="comment-header" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: var(--text-muted);">
             <span class="comment-user view-user-profile-comment" data-username="${comment.username}" style="color: var(--primary); font-weight: 600; cursor: pointer;">@${comment.username}</span>
             <span class="comment-time">${commentTime}</span>
           </div>
-          <p class="comment-text" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-secondary);">${comment.text}</p>
+          <p class="comment-text" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-secondary); margin: 0;">${comment.text}</p>
+          ${comment.photoUrl ? `
+            <div style="margin-top: 6px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(16, 185, 129, 0.15); max-height: 110px; width: fit-content; max-width: 100%;">
+              <img src="${comment.photoUrl}" style="height: 90px; max-width: 100%; object-fit: cover; cursor: pointer;" onclick="window.open('${comment.photoUrl}')" alt="Attachment">
+            </div>
+          ` : ''}
         </div>
       `;
     }).join('');
@@ -1558,12 +1563,17 @@ function renderFeedSection() {
           } else {
             listContainer.innerHTML = updatedComments.map(comment => {
               return `
-                <div class="comment-bubble" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 4px;">
+                <div class="comment-bubble" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px;">
                   <div class="comment-header" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: var(--text-muted);">
                     <span class="comment-user" style="color: var(--primary); font-weight: 600;">@${comment.username}</span>
                     <span class="comment-time">${formatTimeAgo(comment.timestamp)}</span>
                   </div>
-                  <p class="comment-text" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-secondary);">${comment.text}</p>
+                  <p class="comment-text" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-secondary); margin: 0;">${comment.text}</p>
+                  ${comment.photoUrl ? `
+                    <div style="margin-top: 6px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(16, 185, 129, 0.15); max-height: 110px; width: fit-content; max-width: 100%;">
+                      <img src="${comment.photoUrl}" style="height: 90px; max-width: 100%; object-fit: cover; cursor: pointer;" onclick="window.open('${comment.photoUrl}')" alt="Attachment">
+                    </div>
+                  ` : ''}
                 </div>
               `;
             }).join('');
