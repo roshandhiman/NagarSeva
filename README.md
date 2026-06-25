@@ -259,6 +259,13 @@ CREATE POLICY "Allow public upload on bucket"
 
 ## 🖼️ Interface Preview
 
+### 🤖 Groq AI Assistant & Smart Anti-Duplicate Engine
+> Active duplicate inspection warning banner triggered on report submission coordinates matching existing reports, alongside the floating NagBot chat bubble.
+
+<p align="center">
+  <img src="./public/ai_duplicate_prevention.png" alt="AI Duplicate Prevention & NagBot Interface" width="900" style="border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 8px 32px rgba(0,0,0,0.6);" />
+</p>
+
 ### 🌐 Landing Page
 > Particle constellation background, animated typography, scroll-reveal sections, and a live mockup feed showcasing the platform's capabilities.
 
