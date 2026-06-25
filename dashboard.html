@@ -469,6 +469,50 @@
       </div>
     </div>
 
+    <!-- User Profile Details Modal -->
+    <div class="modal-backdrop" id="user-profile-modal">
+      <div class="modal-content" style="max-width: 500px; padding: 24px;">
+        <div class="modal-header" style="margin-bottom: 20px;">
+          <h2>Hero Profile Details</h2>
+          <button class="btn-close" id="btn-close-profile-modal">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        
+        <div class="user-profile-modal-body" style="display: flex; flex-direction: column; gap: 20px;">
+          <div class="user-profile-header-card" style="display: flex; align-items: center; gap: 16px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 16px; border-radius: 12px;">
+            <div id="modal-user-avatar" style="width: 50px; height: 50px; border-radius: 50%; background: rgba(0, 242, 254, 0.1); border: 2px solid var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 800; color: var(--primary);">U</div>
+            <div style="display: flex; flex-direction: column; gap: 2px; flex: 1;">
+              <h3 id="modal-user-name" style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin: 0;">@Username</h3>
+              <span id="modal-user-level" style="font-size: 0.72rem; font-weight: 700; color: var(--primary);">LEVEL 1</span>
+            </div>
+            <div style="text-align: right;">
+              <span id="modal-user-points" style="font-size: 1.1rem; font-weight: 800; color: var(--accent);">0 pts</span>
+            </div>
+          </div>
+
+          <div>
+            <h4 style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; letter-spacing: 0.05em; font-weight: 700;">Hero Bio</h4>
+            <p id="modal-user-bio" style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; margin: 0;">No bio provided by this hero yet.</p>
+          </div>
+
+          <div>
+            <h4 style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; letter-spacing: 0.05em; font-weight: 700;">Unlocked Badges</h4>
+            <div id="modal-user-badges" style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <!-- Badges dynamically rendered -->
+            </div>
+          </div>
+
+          <div>
+            <h4 style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; letter-spacing: 0.05em; font-weight: 700;">Filed Incidents (<span id="modal-user-reports-count">0</span>)</h4>
+            <div id="modal-user-reports-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 180px; overflow-y: auto; padding-right: 4px;">
+              <!-- Reports lists dynamically rendered -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Script Entry -->
     <script type="module" src="/src/dashboard.js"></script>
   </body>

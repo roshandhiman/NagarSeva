@@ -771,7 +771,7 @@ async function loadLeaderboard() {
     const rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : '';
     const avatarChar = user.username.charAt(0).toUpperCase();
     return `
-      <div class="leaderboard-row ${rankClass}">
+      <div class="leaderboard-row ${rankClass} view-user-profile-leaderboard" data-username="${user.username}" style="cursor: pointer;">
         <div class="leaderboard-rank-info">
           <span class="leaderboard-rank-num">${idx + 1}</span>
           <div class="leaderboard-avatar">${avatarChar}</div>
@@ -786,6 +786,12 @@ async function loadLeaderboard() {
       </div>
     `;
   }).join('');
+
+  document.querySelectorAll('.view-user-profile-leaderboard').forEach(el => {
+    el.addEventListener('click', () => {
+      openUserProfileModal(el.dataset.username);
+    });
+  });
 }
 
 /* =========================================================================
@@ -1470,7 +1476,7 @@ function renderFeedSection() {
       return `
         <div class="comment-bubble" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 4px;">
           <div class="comment-header" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: var(--text-muted);">
-            <span class="comment-user" style="color: var(--primary); font-weight: 600;">@${comment.username}</span>
+            <span class="comment-user view-user-profile-comment" data-username="${comment.username}" style="color: var(--primary); font-weight: 600; cursor: pointer;">@${comment.username}</span>
             <span class="comment-time">${commentTime}</span>
           </div>
           <p class="comment-text" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-secondary);">${comment.text}</p>
@@ -1494,7 +1500,7 @@ function renderFeedSection() {
     return `
       <div class="feed-card" id="feed-card-${rep.id}" style="background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 14px; transition: all var(--transition-normal); margin-bottom: 20px; width: 100%; box-sizing: border-box;">
         <div class="feed-card-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
-          <div class="feed-user-info" style="display: flex; align-items: center; gap: 10px;">
+          <div class="feed-user-info view-user-profile" data-username="${rep.username}" style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
             <div class="feed-avatar" style="width: 32px; height: 32px; border-radius: 50%; background: rgba(0, 242, 254, 0.1); border: 1px solid var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--primary); font-size: 0.85rem;">${rep.username.charAt(0).toUpperCase()}</div>
             <div style="display: flex; flex-direction: column;">
               <span class="feed-username" style="font-size: 0.88rem; font-weight: 700; color: var(--text-primary);">@${rep.username}</span>
@@ -1580,6 +1586,21 @@ function renderFeedSection() {
     });
   });
 
+  // Attach user profile click listeners
+  document.querySelectorAll('.view-user-profile').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openUserProfileModal(el.dataset.username);
+    });
+  });
+
+  document.querySelectorAll('.view-user-profile-comment').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openUserProfileModal(el.dataset.username);
+    });
+  });
+
   // Attach location click listeners for feed card
   document.querySelectorAll('.report-location-feed').forEach(link => {
     link.addEventListener('click', (e) => {
@@ -1597,3 +1618,125 @@ function renderFeedSection() {
     });
   });
 }
+
+// User Profile Details Modal helper
+async function openUserProfileModal(username) {
+  const modal = document.getElementById('user-profile-modal');
+  if (!modal) return;
+
+  let targetUser = null;
+  
+  // Find in local storage
+  const localUsers = JSON.parse(localStorage.getItem('ch_users') || '[]');
+  targetUser = localUsers.find(u => u.username === username);
+
+  // Query Supabase
+  if (!targetUser && useSupabase) {
+    try {
+      const { data } = await supabase
+        .from('users')
+        .select('*')
+        .eq('username', username)
+        .maybeSingle();
+      if (data) {
+        targetUser = {
+          userId: data.user_id,
+          username: data.username,
+          points: data.points,
+          badges: data.badges || [],
+          bio: data.bio || ""
+        };
+      }
+    } catch (e) {
+      console.error("Failed to fetch user profile for modal", e);
+    }
+  }
+
+  // Fallback template
+  if (!targetUser) {
+    targetUser = {
+      username: username,
+      points: 50,
+      badges: ['First Responder'],
+      bio: "Just a citizen hero keeping the community clean!"
+    };
+  }
+
+  // Update modal content
+  document.getElementById('modal-user-name').textContent = `@${targetUser.username}`;
+  document.getElementById('modal-user-level').textContent = `LEVEL ${Math.floor((targetUser.points || 0) / 100) + 1}`;
+  document.getElementById('modal-user-points').textContent = `${targetUser.points || 0} pts`;
+  document.getElementById('modal-user-bio').textContent = targetUser.bio || "No bio provided by this hero yet.";
+  document.getElementById('modal-user-avatar').textContent = targetUser.username.charAt(0).toUpperCase();
+
+  // Badges
+  const badgesContainer = document.getElementById('modal-user-badges');
+  if (badgesContainer) {
+    const badges = targetUser.badges || [];
+    if (badges.length === 0) {
+      badgesContainer.innerHTML = '<span class="mini-badge" style="background: rgba(255,255,255,0.05); color: var(--text-muted);">No badges unlocked yet</span>';
+    } else {
+      badgesContainer.innerHTML = badges.map(b => `<span class="mini-badge" style="background: rgba(0, 242, 254, 0.1); color: var(--primary); font-size: 0.72rem; padding: 4px 10px; border-radius: 6px; font-weight: 700;">${b}</span>`).join('');
+    }
+  }
+
+  // Filed Incidents
+  const reportsListContainer = document.getElementById('modal-user-reports-list');
+  const reportsCountSpan = document.getElementById('modal-user-reports-count');
+  
+  const userIncidents = allReports.filter(r => r.username === targetUser.username);
+  if (reportsCountSpan) reportsCountSpan.textContent = userIncidents.length;
+
+  if (reportsListContainer) {
+    if (userIncidents.length === 0) {
+      reportsListContainer.innerHTML = '<p style="font-size: 0.78rem; color: var(--text-muted); text-align: center; padding: 12px 0;">No reported incidents found for this hero.</p>';
+    } else {
+      reportsListContainer.innerHTML = userIncidents.map(rep => {
+        const dateStr = new Date(rep.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const statusText = rep.status === 'fixed' ? 'Solved' : rep.status === 'review' ? 'Under Review' : 'Reported';
+        return `
+          <div class="user-modal-report-item" data-lat="${rep.latitude}" data-lng="${rep.longitude}" style="display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 8px 10px; cursor: pointer; transition: all 0.2s;">
+            <img src="${rep.photoUrl}" style="width: 36px; height: 36px; object-fit: cover; border-radius: 6px;" alt="report thumbnail">
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0;">${rep.title}</span>
+              <span style="font-size: 0.68rem; color: var(--text-muted); margin: 0;">Filed on ${dateStr}</span>
+            </div>
+            <span class="status-pill ${rep.status}" style="font-size: 0.62rem; padding: 2px 6px;">${statusText}</span>
+          </div>
+        `;
+      }).join('');
+
+      reportsListContainer.querySelectorAll('.user-modal-report-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const lat = parseFloat(item.dataset.lat);
+          const lng = parseFloat(item.dataset.lng);
+          modal.classList.remove('active');
+          map.setView([lat, lng], 17);
+          const markerIndex = allReports.findIndex(r => r.latitude === lat && r.longitude === lng);
+          if (markerIndex !== -1 && activeMarkers[markerIndex]) {
+            activeMarkers[markerIndex].openPopup();
+          }
+          document.getElementById('map-section').scrollIntoView({ behavior: 'smooth' });
+        });
+      });
+    }
+  }
+
+  modal.classList.add('active');
+}
+
+// Global modal binder execution
+function setupUserProfileModal() {
+  const btnClose = document.getElementById('btn-close-profile-modal');
+  const modal = document.getElementById('user-profile-modal');
+  if (btnClose && modal) {
+    btnClose.addEventListener('click', () => {
+      modal.classList.remove('active');
+    });
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.classList.remove('active');
+    });
+  }
+}
+
+setupUserProfileModal();

@@ -326,7 +326,7 @@ export async function getCurrentSession() {
 
 // Get current user profile (with points and badges)
 export async function getUserProfile(userId = 'current_user') {
-  if (useSupabase) {
+  if (useSupabase && userId !== 'current_user' && !userId.startsWith('user') && userId !== 'admin') {
     try {
       const { data, error } = await supabase
         .from('users')
@@ -335,12 +335,16 @@ export async function getUserProfile(userId = 'current_user') {
         .single();
       
       if (data && !error) {
+        // Read local bio fallback if column doesn't exist on Supabase users table
+        const localBios = JSON.parse(localStorage.getItem('ch_local_bios') || '{}');
+        const savedBio = localBios[userId] || data.bio || "";
+
         return {
           userId: data.user_id,
           username: data.username,
           points: data.points,
           badges: data.badges || [],
-          bio: data.bio || ""
+          bio: savedBio
         };
       }
     } catch (e) {
@@ -349,18 +353,28 @@ export async function getUserProfile(userId = 'current_user') {
   }
   
   // Local storage mock
-  const users = JSON.parse(localStorage.getItem('ch_users'));
+  const users = JSON.parse(localStorage.getItem('ch_users') || '[]');
   const found = users.find(u => u.userId === userId) || users[users.length - 1];
-  if (found && !found.bio) {
-    found.bio = "";
+  if (found) {
+    if (!found.bio) found.bio = "";
+    return found;
   }
-  return found;
+  
+  // Dynamic mock user fallback
+  return {
+    userId: userId,
+    username: 'citizen_' + userId.substring(0, 5),
+    points: 50,
+    badges: ['First Responder'],
+    bio: ""
+  };
 }
 
 // Update user profile information
 export async function updateUserProfile(userId, { username, bio }) {
-  if (useSupabase) {
+  if (useSupabase && userId !== 'current_user' && !userId.startsWith('user') && userId !== 'admin') {
     try {
+      // 1. Try updating both username and bio
       const { data, error } = await supabase
         .from('users')
         .update({ username, bio })
@@ -376,6 +390,31 @@ export async function updateUserProfile(userId, { username, bio }) {
           badges: data.badges || [],
           bio: data.bio || ""
         };
+      } else if (error && (error.message.includes('column') || error.code === '42703')) {
+        console.warn("bio column does not exist on users table, retrying update with username only");
+        
+        // 2. Try updating username only
+        const { data: retryData, error: retryError } = await supabase
+          .from('users')
+          .update({ username })
+          .eq('user_id', userId)
+          .select()
+          .single();
+
+        if (retryData && !retryError) {
+          // Save bio locally since database schema doesn't have it
+          const localBios = JSON.parse(localStorage.getItem('ch_local_bios') || '{}');
+          localBios[userId] = bio;
+          localStorage.setItem('ch_local_bios', JSON.stringify(localBios));
+
+          return {
+            userId: retryData.user_id,
+            username: retryData.username,
+            points: retryData.points,
+            badges: retryData.badges || [],
+            bio: bio
+          };
+        }
       }
     } catch (e) {
       console.error("Supabase updateUserProfile failed", e);
@@ -383,23 +422,34 @@ export async function updateUserProfile(userId, { username, bio }) {
   }
 
   // Local storage mock fallback
-  const users = JSON.parse(localStorage.getItem('ch_users'));
-  const userIndex = users.findIndex(u => u.userId === userId);
-  if (userIndex !== -1) {
+  const users = JSON.parse(localStorage.getItem('ch_users') || '[]');
+  let userIndex = users.findIndex(u => u.userId === userId);
+  
+  if (userIndex === -1) {
+    const newUser = {
+      userId: userId,
+      username: username,
+      points: 50,
+      badges: ['First Responder'],
+      bio: bio
+    };
+    users.push(newUser);
+    localStorage.setItem('ch_users', JSON.stringify(users));
+    userIndex = users.length - 1;
+  } else {
     users[userIndex].username = username;
     users[userIndex].bio = bio;
     localStorage.setItem('ch_users', JSON.stringify(users));
-
-    // Update active session metadata
-    const session = JSON.parse(localStorage.getItem('ch_session'));
-    if (session && session.userId === userId) {
-      session.username = username;
-      localStorage.setItem('ch_session', JSON.stringify(session));
-    }
-
-    return users[userIndex];
   }
-  return null;
+
+  // Update active session metadata
+  const session = JSON.parse(localStorage.getItem('ch_session'));
+  if (session && session.userId === userId) {
+    session.username = username;
+    localStorage.setItem('ch_session', JSON.stringify(session));
+  }
+
+  return users[userIndex];
 }
 
 // Get the top users sorted by points
