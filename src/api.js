@@ -589,7 +589,8 @@ export async function getReports() {
         const seenTitles = new Set();
         const uniqueReports = [];
         data.forEach(d => {
-          const titleKey = `${d.title}_${d.timestamp}`;
+          // Deduplicate by title to collapse double-inserts from seeder runs with varying timestamps
+          const titleKey = d.title ? d.title.trim().toLowerCase() : '';
           if (!seenIds.has(d.id) && !seenTitles.has(titleKey)) {
             seenIds.add(d.id);
             seenTitles.add(titleKey);
@@ -624,7 +625,7 @@ export async function getReports() {
   const seenTitles = new Set();
   const uniqueReports = [];
   reports.forEach(r => {
-    const titleKey = `${r.title}_${r.timestamp}`;
+    const titleKey = r.title ? r.title.trim().toLowerCase() : '';
     if (!seenIds.has(r.id) && !seenTitles.has(titleKey)) {
       seenIds.add(r.id);
       seenTitles.add(titleKey);
