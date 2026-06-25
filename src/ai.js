@@ -82,7 +82,7 @@ export function setChatReports(myReports, username) {
   currentUsername = username   || 'Citizen';
 }
 
-// ── 3. STRICT SYSTEM PROMPT — no off-topic ────────────────
+// ── 3. SYSTEM PROMPT ─────────────────────────────────────
 function buildSystemPrompt() {
   const total    = userReportsRef.length;
   const resolved = userReportsRef.filter(r => r.status === 'fixed').length;
@@ -98,42 +98,54 @@ function buildSystemPrompt() {
         } | Filed: ${new Date(r.timestamp).toLocaleDateString('en-IN')}`
       ).join('\n');
 
-  return `You are NagBot — a strict personal report assistant for NagarSeva.
+  return `You are NagBot — the friendly AI assistant built into NagarSeva, a civic issue reporting platform.
 
 LOGGED-IN USER: @${currentUsername}
 THEIR REPORTS (${total} total | ${open} open | ${review} under review | ${resolved} resolved):
 ${reportList}
 
-YOUR ONLY JOB:
-- Help @${currentUsername} view, understand, and track ONLY their own reports listed above.
-- When they ask "show my reports" or "what are my reports", list all of them neatly with status emoji.
-- When they ask about a specific report, give its status and details.
-- When they ask "how many resolved/open", give them the count.
+YOU CAN HELP WITH TWO THINGS:
 
-STRICT RULES — YOU MUST FOLLOW:
-1. You ONLY discuss the user's reports listed above. NOTHING ELSE.
-2. If the user asks ANYTHING not related to their reports (coding, general questions, other users, platform help, news, jokes, etc.) — respond ONLY with:
-   "I can only help you track your NagarSeva reports. Type 'show my reports' to see them."
-3. Never answer coding questions, general knowledge, or unrelated topics.
+1. PERSONAL REPORT TRACKING:
+   - Show, list, and explain @${currentUsername}'s own reports above.
+   - Tell them status, resolution progress, and summary counts.
+
+2. HOW THE NAGARASEVA APP WORKS — answer questions like:
+   - "How do I create a report?" → Click the map on Incident Radar, drop a pin, fill the form, submit.
+   - "How do I use the map?" → Open Incident Radar. Tap/click anywhere on the map to drop a pin. A Quick Report form will pop up.
+   - "What is the Public Feed?" → Shows all reports from all citizens on the platform.
+   - "What do the statuses mean?" → 📋 Reported = new, 🔄 Under Review = being looked at, ✅ Resolved = fixed.
+   - "What are badges/points?" → You earn points and badges by filing verified reports. Check the Leaderboard.
+   - "What is the Leaderboard?" → Ranks citizens by points earned from filing and resolving reports.
+   - "How do I edit my profile?" → Click the pencil icon on your user card in the sidebar.
+   - "What report types exist?" → Pothole, Garbage, Street Light, Water Leak, Encroachment, Other.
+   - "How does duplicate detection work?" → Groq AI scans nearby reports when you submit. If a similar one exists nearby, it warns you.
+   - "What is NagarSeva?" → A civic platform where citizens report local issues and track their resolution.
+
+STRICT RULES:
+1. ONLY answer about: the user's own reports OR how NagarSeva works.
+2. NEVER help with coding, general knowledge, news, jokes, recipes, or anything unrelated to NagarSeva.
+3. If asked something completely unrelated, say: "I'm NagBot — I can help you track your reports or explain how NagarSeva works. What would you like to know?"
 4. Never make up report data. Only use what's listed above.
-5. Keep replies short and focused.`;
+5. Keep replies concise, clear, and friendly. Use emojis sparingly.`;
 }
 
 // ── 4. SEND MESSAGE ───────────────────────────────────────
 export async function sendChatMessage(userText) {
   // Client-side quick-reject for obvious off-topic (saves API call)
   const offTopicPatterns = [
-    /python|java|code|html|css|javascript|programming/i,
-    /help me with|explain|how to|what is|tell me about/i,
-    /weather|news|recipe|joke|story|game/i,
-    /chatgpt|gpt|openai|gemini|groq/i,
+    /\b(python|java(?!script)|code|html|css|programming|algorithm|debug)\b/i,
+    /\b(weather|news|recipe|joke|story|game|movie|music|cricket|football)\b/i,
+    /\b(chatgpt|openai|gemini|claude|llm|machine learning)\b/i,
+    /\b(stock|crypto|bitcoin|invest|finance|politic|election)\b/i,
   ];
-  const isObviouslyOffTopic = offTopicPatterns.some(p => p.test(userText));
-  // But always allow report-related keywords
-  const isReportRelated = /report|status|filed|resolve|pothole|garbage|leakage|hazard|my issue|fixed|review|submitted/i.test(userText);
+  // App-related keywords — always allow these through
+  const isAppRelated = /report|status|filed|resolve|pothole|garbage|leakage|hazard|my issue|fixed|review|submitted|map|pin|badge|points|leaderboard|feed|profile|nagarseva|nagbot|how (do|to|does)|what is|create|submit|duplicate|section|dashboard/i.test(userText);
 
-  if (isObviouslyOffTopic && !isReportRelated) {
-    return "I can only help you track your NagarSeva reports. Type **'show my reports'** to see them.";
+  const isObviouslyOffTopic = !isAppRelated && offTopicPatterns.some(p => p.test(userText));
+
+  if (isObviouslyOffTopic) {
+    return "I'm NagBot — I can help you track your reports or explain how NagarSeva works. What would you like to know? 😊";
   }
 
   // Special shortcut: "show my reports" → render directly without AI call
@@ -195,7 +207,7 @@ export function initChatbot() {
             <div class="nagbot-avatar-sm">N</div>
             <div>
               <p class="nagbot-title">NagBot</p>
-              <p class="nagbot-subtitle">Your Report Tracker • Powered by Groq</p>
+              <p class="nagbot-subtitle">Your NagarSeva Assistant • Powered by Groq</p>
             </div>
           </div>
           <button id="nagbot-clear" class="nagbot-clear-btn" title="Clear chat">
@@ -207,11 +219,11 @@ export function initChatbot() {
           <div class="nagbot-msg nagbot-msg-bot">
             <div class="nagbot-msg-avatar">N</div>
             <div class="nagbot-msg-bubble">
-              👋 Hi! I'm <strong>NagBot</strong> — I track <strong>your</strong> NagarSeva reports.<br><br>
-              I can only help with <em>your own reports</em>. Try:<br>
-              📋 <strong>Show my reports</strong><br>
-              🔍 <strong>How many are resolved?</strong><br>
-              📌 <strong>Status of my pothole report?</strong>
+              👋 Hi! I'm <strong>NagBot</strong> — your NagarSeva AI assistant.<br><br>
+              I can help with two things:<br>
+              📋 <strong>Track your reports</strong> — status, progress, counts<br>
+              🗺️ <strong>How the app works</strong> — creating reports, features, tips<br><br>
+              What would you like to know?
             </div>
           </div>
         </div>
@@ -225,11 +237,12 @@ export function initChatbot() {
         <div class="nagbot-quick-btns">
           <button class="nagbot-quick-btn" data-msg="show my reports">📋 My Reports</button>
           <button class="nagbot-quick-btn" data-msg="how many are resolved?">✅ Resolved</button>
-          <button class="nagbot-quick-btn" data-msg="which reports are still open?">📋 Open</button>
+          <button class="nagbot-quick-btn" data-msg="how do I create a report?">🗺️ How to Report</button>
+          <button class="nagbot-quick-btn" data-msg="what features does NagarSeva have?">✨ App Guide</button>
         </div>
 
         <div class="nagbot-input-row">
-          <input id="nagbot-input" class="nagbot-input" type="text" placeholder="Ask about your reports..." maxlength="200" autocomplete="off"/>
+          <input id="nagbot-input" class="nagbot-input" type="text" placeholder="Ask about your reports or the app..." maxlength="200" autocomplete="off"/>
           <button id="nagbot-send" class="nagbot-send-btn" title="Send">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           </button>
