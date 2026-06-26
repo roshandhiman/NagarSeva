@@ -20,11 +20,48 @@
     <!-- Canvas Particle Background -->
     <canvas id="bg-canvas"></canvas>
 
-    <!-- ===================== LOADING SCREEN (shown while checking session) ===================== -->
-    <div id="app-loading-screen" style="position: fixed; inset: 0; z-index: 9999; background: #09090b; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; font-family: 'Outfit', sans-serif;">
-      <div style="font-size: 1.6rem; font-weight: 800; color: #fafafa; letter-spacing: -0.02em;">NagarSeva<span style="color: #00f2fe;">.</span></div>
-      <div style="width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.08); border-top-color: #00f2fe; border-radius: 50%; animation: app-spin 0.7s linear infinite;"></div>
-      <style>@keyframes app-spin { to { transform: rotate(360deg); } }</style>
+    <!-- ===================== LOADING SCREEN (Premium Skeleton Loader) ===================== -->
+    <div id="app-loading-screen">
+      <!-- Sidebar Skeleton -->
+      <aside class="skeleton-sidebar">
+        <div class="skeleton-logo shimmer"></div>
+        <div class="skeleton-toggle shimmer"></div>
+        <div class="skeleton-user-card">
+          <div class="skeleton-avatar shimmer"></div>
+          <div class="skeleton-text-line short shimmer"></div>
+          <div class="skeleton-text-line shimmer"></div>
+        </div>
+        <div class="skeleton-nav">
+          <div class="skeleton-nav-item shimmer"></div>
+          <div class="skeleton-nav-item shimmer"></div>
+          <div class="skeleton-nav-item shimmer"></div>
+          <div class="skeleton-nav-item shimmer"></div>
+        </div>
+        <div class="skeleton-sidebar-bottom">
+          <div class="skeleton-nav-item shimmer"></div>
+          <div class="skeleton-nav-item shimmer"></div>
+        </div>
+      </aside>
+
+      <!-- Main Panel Skeleton -->
+      <main class="skeleton-main">
+        <div class="skeleton-header">
+          <div class="skeleton-title">
+            <div class="skeleton-text-line heading shimmer"></div>
+            <div class="skeleton-text-line subtitle shimmer"></div>
+          </div>
+          <div class="skeleton-action-btn shimmer"></div>
+        </div>
+
+        <div class="skeleton-map shimmer"></div>
+
+        <div class="skeleton-stats">
+          <div class="skeleton-stat-card shimmer"></div>
+          <div class="skeleton-stat-card shimmer"></div>
+          <div class="skeleton-stat-card shimmer"></div>
+          <div class="skeleton-stat-card shimmer"></div>
+        </div>
+      </main>
     </div>
 
     <!-- ===================== NOVA LOGIN FORM WRAPPER ===================== -->

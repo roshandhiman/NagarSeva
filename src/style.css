@@ -3624,13 +3624,196 @@ html.light-theme .theme-toggle-thumb {
   color: #f59e0b; /* Sunny amber */
 }
 
+/* ============================================================
+   PREMIUM SKELETON LOADER
+   ============================================================ */
+#app-loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--bg-dark);
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  font-family: var(--font-body);
+}
+
+.skeleton-sidebar {
+  background: rgba(13, 16, 29, 0.7);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid var(--border-color);
+  padding: 30px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.skeleton-main {
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.skeleton-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.skeleton-title {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 50%;
+}
+
+/* Shimmer base style */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 75%
+  );
+  background-size: 200% 100%;
+  animation: loading-shimmer 1.5s infinite linear;
+  border-radius: 8px;
+}
+
+/* Shimmer style in light theme */
+html.light-theme .shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(15, 23, 42, 0.03) 25%,
+    rgba(15, 23, 42, 0.08) 50%,
+    rgba(15, 23, 42, 0.03) 75%
+  );
+  background-size: 200% 100%;
+}
+
+@keyframes loading-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-logo {
+  height: 28px;
+  width: 140px;
+  margin-bottom: 8px;
+}
+
+.skeleton-toggle {
+  height: 44px;
+  width: 100%;
+  border-radius: 12px;
+}
+
+.skeleton-user-card {
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.01);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.skeleton-avatar {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+}
+
+.skeleton-text-line {
+  height: 12px;
+  width: 100%;
+}
+
+.skeleton-text-line.short {
+  width: 60%;
+}
+
+.skeleton-text-line.heading {
+  height: 28px;
+  width: 200px;
+}
+
+.skeleton-text-line.subtitle {
+  height: 14px;
+  width: 320px;
+}
+
+.skeleton-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.skeleton-nav-item {
+  height: 44px;
+  width: 100%;
+  border-radius: 8px;
+}
+
+.skeleton-sidebar-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-action-btn {
+  height: 46px;
+  width: 160px;
+  border-radius: 10px;
+}
+
+.skeleton-map {
+  height: 480px;
+  width: 100%;
+  border-radius: 14px;
+}
+
+.skeleton-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.skeleton-stat-card {
+  height: 98px;
+  border-radius: 16px;
+}
+
 /* Light Theme Loading Screen Override */
 html.light-theme #app-loading-screen {
   background: #f8fafc !important;
 }
 
-html.light-theme #app-loading-screen div {
-  color: #0f172a !important;
+html.light-theme .skeleton-sidebar {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-right: 1px solid #e2e8f0 !important;
 }
+
+html.light-theme .skeleton-user-card {
+  border-color: #e2e8f0 !important;
+  background: #ffffff !important;
+}
+
+/* Responsive side-drawer hiding */
+@media (max-width: 968px) {
+  #app-loading-screen {
+    grid-template-columns: 1fr;
+  }
+  .skeleton-sidebar {
+    display: none;
+  }
+}
+
 
 
