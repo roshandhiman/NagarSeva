@@ -221,7 +221,7 @@
 
           <!-- Theme Toggle -->
           <div class="theme-toggle-container">
-            <span class="theme-toggle-label">Appearance</span>
+            <span class="theme-toggle-label" data-i18n="appearance">Appearance</span>
             <div id="theme-toggle" class="theme-toggle-btn" role="button" tabindex="0" aria-label="Toggle Theme">
               <div class="theme-toggle-track">
                 <div class="theme-toggle-thumb">
@@ -231,6 +231,15 @@
                   <svg class="theme-icon sun-icon" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- Language Selector -->
+          <div class="language-toggle-container" style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 12px; transition: all var(--transition-fast);">
+            <span class="language-toggle-label" style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); font-family: var(--font-heading);" data-i18n="language">Language</span>
+            <div class="language-options" style="display: flex; gap: 4px;">
+              <button id="lang-en-btn" class="lang-btn active" style="background: var(--primary); border: none; color: white; padding: 2px 8px; font-size: 0.72rem; font-weight: 700; border-radius: 4px; cursor: pointer; transition: all 0.2s;">EN</button>
+              <button id="lang-hi-btn" class="lang-btn" style="background: rgba(255, 255, 255, 0.05); border: none; color: var(--text-secondary); padding: 2px 8px; font-size: 0.72rem; font-weight: 700; border-radius: 4px; cursor: pointer; transition: all 0.2s;">हिंदी</button>
             </div>
           </div>
 
@@ -251,23 +260,23 @@
           <ul class="sidebar-nav">
             <li class="active" id="nav-item-map"><a href="#map-section">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
-              <span>Incident Radar</span>
+              <span data-i18n="dashboard">Incident Radar</span>
             </a></li>
             <li id="nav-item-feed"><a href="#feed-section">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg>
-              <span>Public Feed</span>
+              <span data-i18n="incidentFeed">Public Feed</span>
             </a></li>
             <li class="citizen-only" id="nav-item-reports"><a href="#reports-section">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-              <span>My Reports</span>
+              <span data-i18n="myReports">My Reports</span>
             </a></li>
             <li class="citizen-only" id="nav-item-leaderboard"><a href="#leaderboard-section">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34"/><path d="M12 2a6 6 0 0 1 6 6v5a6 6 0 0 1-6 6 6 6 0 0 1-6-6V8a6 6 0 0 1 6-6z"/></svg>
-              <span>Leaderboard</span>
+              <span data-i18n="leaderboard">Leaderboard</span>
             </a></li>
             <li class="admin-only" id="nav-item-admin" style="display: none;"><a href="#admin-reports-section">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
-              <span>Municipal Command</span>
+              <span data-i18n="pendingTickets">Municipal Command</span>
             </a></li>
           </ul>
         </div>
@@ -275,7 +284,7 @@
         <div class="sidebar-bottom" style="display: flex; flex-direction: column; gap: 8px;">
           <button class="btn btn-ghost" id="btn-logout" style="width: 100%; justify-content: flex-start; gap: 12px; padding: 12px 16px;">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            <span>Log Out</span>
+            <span data-i18n="signOut">Log Out</span>
           </button>
           <a href="/" class="btn btn-ghost" style="width: 100%; justify-content: flex-start; gap: 12px; padding: 12px 16px;">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 8 12 12 16"/><line x1="16" y1="12" x2="8" y2="12"/></svg>
@@ -289,7 +298,7 @@
         <!-- Dashboard Header -->
         <div class="dashboard-header">
           <div class="dashboard-title">
-            <h1 id="dashboard-title-text">Citizen Command</h1>
+            <h1 id="dashboard-title-text" data-i18n="appName">Citizen Command</h1>
             <p id="dashboard-subtitle-text">Report hazards and track real-time resolution</p>
           </div>
           <!-- Citizen Action Button -->
@@ -403,9 +412,17 @@
         
         <!-- Section 3: Public Incident Feed (Visible to both citizens and admins) -->
         <section id="feed-section" class="card full-width" style="margin-top: 30px; display: none;">
-          <div class="card-title" style="margin-bottom: 20px;">
-            <span>Public Incident Feed</span>
-            <span id="feed-reports-count" class="mini-badge" style="font-size: 0.75rem; padding: 3px 8px; border-radius: 6px;">0 Resolved / Reported</span>
+          <div class="card-title" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span data-i18n="publicFeed">Public Incident Feed</span>
+              <span id="feed-reports-count" class="mini-badge" style="font-size: 0.75rem; padding: 3px 8px; border-radius: 6px;">0 Resolved / Reported</span>
+            </div>
+            <!-- Feed Sort Controls -->
+            <div class="feed-sort-controls" style="display: flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 8px;">
+              <span style="font-size: 0.75rem; color: var(--text-muted);" data-i18n="sortBy">Sort by</span>
+              <button id="btn-sort-latest" class="btn-sort active" style="background: var(--primary); border: none; color: white; padding: 4px 8px; font-size: 0.72rem; font-weight: 700; border-radius: 5px; cursor: pointer; transition: all 0.2s;" data-i18n="sortLatest">Latest</button>
+              <button id="btn-sort-nearest" class="btn-sort" style="background: rgba(255, 255, 255, 0.04); border: none; color: var(--text-secondary); padding: 4px 8px; font-size: 0.72rem; font-weight: 700; border-radius: 5px; cursor: pointer; transition: all 0.2s;" data-i18n="sortNearest">Near Me</button>
+            </div>
           </div>
           <div class="feed-container" id="feed-reports-container">
             <!-- Dynamically populated feed cards -->
@@ -454,42 +471,70 @@
           <div class="modal-form-grid">
             <!-- Left Side: Form Details -->
             <div class="modal-form-left">
-              <div class="form-group">
-                <label for="report-type">Issue Category</label>
-                <select id="report-type" class="form-control" required>
-                  <option value="" disabled selected>Select issue type...</option>
-                  <option value="pothole">Pothole (Road Damage)</option>
-                  <option value="garbage">Garbage / Waste Pile-up</option>
-                  <option value="leakage">Water / Sewage Leakage</option>
-                  <option value="hazard">General Safety Hazard</option>
-                </select>
+              <!-- Voice status alert -->
+              <div id="voice-status-alert" style="display: none; align-items: center; gap: 8px; padding: 10px 12px; margin-bottom: 12px; border-radius: 8px; background: rgba(255, 107, 74, 0.08); border: 1px solid rgba(255, 107, 74, 0.2); color: var(--primary); font-size: 0.8rem; font-weight: 700;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--primary); display: inline-block; animation: pulse 1.5s infinite;"></span>
+                <span id="voice-status-text" data-i18n="voiceListening">🎤 Listening... Speak now</span>
               </div>
 
               <div class="form-group">
-                <label for="report-title">Brief Summary</label>
-                <input type="text" id="report-title" class="form-control" placeholder="e.g. Broken water main, Deep pothole outside park" required>
-              </div>
-
-              <div class="form-group">
-                <label for="report-desc">Detailed Description</label>
-                <textarea id="report-desc" class="form-control" rows="3" placeholder="Provide extra details to help authorities identify or resolve the problem..." required></textarea>
-              </div>
-
-              <div class="form-group">
-                <label>Upload Incident Image</label>
+                <label data-i18n="uploadImage">Upload Incident Image</label>
                 <div class="file-upload-wrapper">
                   <label for="report-image" class="file-upload-label" id="file-label">
                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                    <span id="file-label-text">Select an image or snap a photo</span>
-                    <span style="font-size: 0.72rem; color: var(--text-muted);">If on mobile, tap to open camera</span>
+                    <span id="file-label-text" data-i18n="selectImage">Select an image or snap a photo</span>
+                    <span style="font-size: 0.72rem; color: var(--text-muted);" data-i18n="mobileTip">If on mobile, tap to open camera</span>
                   </label>
                   <input type="file" id="report-image" class="file-upload-input" accept="image/*" required>
                   <div id="image-preview-container" style="display: none; position: relative; margin-top: 10px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border-color);">
                     <img id="image-preview" src="" alt="Preview" style="width: 100%; max-height: 180px; object-fit: cover; display: none;">
-                    <button type="button" id="btn-remove-image" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--transition-fast); backdrop-filter: blur(4px);">
+                    
+                    <!-- AI Analyzing Overlay -->
+                    <div id="ai-loading-overlay" style="display: none; position: absolute; inset: 0; background: rgba(3, 3, 3, 0.7); backdrop-filter: blur(4px); align-items: center; justify-content: center; flex-direction: column; gap: 10px; color: white;">
+                      <svg class="spin-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite; color: var(--primary);"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>
+                      <span style="font-size: 0.82rem; font-weight: 700;" data-i18n="aiAnalyzing">✨ AI is analyzing the image...</span>
+                    </div>
+
+                    <button type="button" id="btn-remove-image" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--transition-fast); backdrop-filter: blur(4px); z-index: 20;">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
                   </div>
+                  <!-- AI auto-fill feedback -->
+                  <div id="ai-feedback-banner" style="display: none; align-items: center; gap: 6px; padding: 8px 12px; margin-top: 8px; border-radius: 8px; background: rgba(52, 211, 153, 0.08); border: 1px solid rgba(52, 211, 153, 0.2); color: var(--accent); font-size: 0.78rem; font-weight: 700;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span data-i18n="aiAnalyzed">✅ AI auto-filled categories and details from your image!</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="report-type" data-i18n="category">Issue Category</label>
+                <select id="report-type" class="form-control" required>
+                  <option value="" disabled selected data-i18n="selectCategory">Select issue type...</option>
+                  <option value="pothole" data-i18n="pothole">Pothole (Road Damage)</option>
+                  <option value="garbage" data-i18n="garbage">Garbage / Waste Pile-up</option>
+                  <option value="leakage" data-i18n="leakage">Water / Sewage Leakage</option>
+                  <option value="hazard" data-i18n="hazard">General Safety Hazard</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="report-title" data-i18n="briefSummary">Brief Summary</label>
+                <div style="position: relative; display: flex; align-items: center; width: 100%;">
+                  <input type="text" id="report-title" class="form-control" placeholder="e.g. Broken water main, Deep pothole outside park" required style="padding-right: 40px; width: 100%;" data-i18n-placeholder="briefSummary">
+                  <button type="button" id="mic-btn-title" style="position: absolute; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; transition: all var(--transition-fast); padding: 4px; display: flex; align-items: center; justify-content: center; z-index: 10;" data-i18n-title="voiceTitle">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mic-icon"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="report-desc" data-i18n="desc">Detailed Description</label>
+                <div style="position: relative; display: flex; align-items: center; width: 100%;">
+                  <textarea id="report-desc" class="form-control" rows="3" placeholder="Provide extra details to help authorities identify or resolve the problem..." required style="padding-right: 40px; width: 100%;" data-i18n-placeholder="desc"></textarea>
+                  <button type="button" id="mic-btn-desc" style="position: absolute; right: 10px; bottom: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; transition: all var(--transition-fast); padding: 4px; display: flex; align-items: center; justify-content: center; z-index: 10;" data-i18n-title="voiceDesc">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mic-icon"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+                  </button>
                 </div>
               </div>
             </div>

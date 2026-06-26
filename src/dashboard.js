@@ -3,13 +3,17 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { supabase, useSupabase, getUserProfile, getLeaderboard, getReports, submitReport, updateReportStatus, signIn, signUp, signOut, getCurrentSession, signInWithGoogle, ensureUserProfile, addReportComment, updateUserProfile } from './api.js';
 import { initCursor } from './cursor.js';
-import { initChatbot, setChatReports, checkDuplicateReport } from './ai.js';
+import { initChatbot, setChatReports, checkDuplicateReport, analyzeImage } from './ai.js';
+import { t, translatePage, setLanguage, getLanguage } from './i18n.js';
 
 // Initialize custom cursor on this page
 initCursor();
 
 // Initialize theme toggling
 initTheme();
+
+// Initialize language settings
+initLanguage();
 
 // Fix Leaflet marker path assets
 delete L.Icon.Default.prototype._getIconUrl;
@@ -1071,14 +1075,53 @@ function setupEventListeners() {
       const file = e.target.files[0];
       if (file) {
         const reader = new FileReader();
-        reader.onload = (ev) => {
-          imagePreview.src = ev.target.result;
+        reader.onload = async (ev) => {
+          const base64Data = ev.target.result;
+          imagePreview.src = base64Data;
           imagePreview.style.display = 'block';
           const imagePreviewContainer = document.getElementById('image-preview-container');
           if (imagePreviewContainer) {
             imagePreviewContainer.style.display = 'block';
           }
           fileLabel.style.display = 'none';
+
+          // Call AI Image Analysis
+          const aiOverlay = document.getElementById('ai-loading-overlay');
+          const feedbackBanner = document.getElementById('ai-feedback-banner');
+          if (aiOverlay) aiOverlay.style.display = 'flex';
+          if (feedbackBanner) feedbackBanner.style.display = 'none';
+
+          try {
+            const aiResult = await analyzeImage(base64Data);
+            if (aiOverlay) aiOverlay.style.display = 'none';
+
+            if (aiResult) {
+              const categorySelect = document.getElementById('report-type');
+              const titleInput = document.getElementById('report-title');
+              const descTextarea = document.getElementById('report-desc');
+
+              if (aiResult.category && categorySelect) {
+                categorySelect.value = aiResult.category;
+                categorySelect.style.borderColor = 'var(--accent)';
+                setTimeout(() => categorySelect.style.borderColor = '', 2000);
+              }
+              if (aiResult.title && titleInput) {
+                titleInput.value = aiResult.title;
+                titleInput.style.borderColor = 'var(--accent)';
+                setTimeout(() => titleInput.style.borderColor = '', 2000);
+              }
+              if (aiResult.description && descTextarea) {
+                descTextarea.value = aiResult.description;
+                descTextarea.style.borderColor = 'var(--accent)';
+                setTimeout(() => descTextarea.style.borderColor = '', 2000);
+              }
+
+              if (feedbackBanner) feedbackBanner.style.display = 'flex';
+            }
+          } catch (err) {
+            console.error('Image analysis error:', err);
+            if (aiOverlay) aiOverlay.style.display = 'none';
+          }
         };
         reader.readAsDataURL(file);
       }
@@ -1095,6 +1138,10 @@ function setupEventListeners() {
         imagePreview.src = '';
         imagePreview.style.display = 'none';
         fileLabel.style.display = 'flex';
+        
+        // Hide AI feedback banner
+        const feedbackBanner = document.getElementById('ai-feedback-banner');
+        if (feedbackBanner) feedbackBanner.style.display = 'none';
       });
     }
 
@@ -1350,6 +1397,139 @@ function handleNavigation(targetId) {
         map.invalidateSize();
       }, 100);
     }
+
+    // --- Voice Reporting Event Listeners ---
+    const micBtnTitle = document.getElementById('mic-btn-title');
+    const micBtnDesc = document.getElementById('mic-btn-desc');
+    const voiceStatusAlert = document.getElementById('voice-status-alert');
+    const voiceStatusText = document.getElementById('voice-status-text');
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null;
+    let activeTargetInput = null;
+
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      
+      recognition.onstart = () => {
+        if (voiceStatusAlert) {
+          voiceStatusAlert.style.display = 'flex';
+          const curLang = getLanguage();
+          voiceStatusText.textContent = curLang === 'hi' ? '🎤 सुन रहा हूँ... अब बोलें' : '🎤 Listening... Speak now';
+        }
+      };
+
+      recognition.onerror = (e) => {
+        console.warn('Speech recognition error:', e.error);
+        if (voiceStatusAlert) voiceStatusAlert.style.display = 'none';
+      };
+
+      recognition.onend = () => {
+        if (voiceStatusAlert) voiceStatusAlert.style.display = 'none';
+        activeTargetInput = null;
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        if (activeTargetInput) {
+          const currentVal = activeTargetInput.value.trim();
+          activeTargetInput.value = currentVal ? `${currentVal} ${transcript}` : transcript;
+          activeTargetInput.style.borderColor = 'var(--primary)';
+          const target = activeTargetInput;
+          setTimeout(() => target.style.borderColor = '', 2000);
+        }
+      };
+
+      const handleMicClick = (targetInput) => {
+        if (activeTargetInput === targetInput) {
+          recognition.stop();
+        } else {
+          recognition.stop();
+          activeTargetInput = targetInput;
+          const curLang = getLanguage();
+          recognition.lang = curLang === 'hi' ? 'hi-IN' : 'en-US';
+          try {
+            recognition.start();
+          } catch (e) {
+            console.warn('Speech recognition start failed:', e);
+          }
+        }
+      };
+
+      if (micBtnTitle) {
+        micBtnTitle.addEventListener('click', () => {
+          const titleInput = document.getElementById('report-title');
+          handleMicClick(titleInput);
+        });
+      }
+
+      if (micBtnDesc) {
+        micBtnDesc.addEventListener('click', () => {
+          const descInput = document.getElementById('report-desc');
+          handleMicClick(descInput);
+        });
+      }
+    } else {
+      if (micBtnTitle) micBtnTitle.style.display = 'none';
+      if (micBtnDesc) micBtnDesc.style.display = 'none';
+    }
+
+    // --- Feed Sorting Event Listeners ---
+    const btnSortLatest = document.getElementById('btn-sort-latest');
+    const btnSortNearest = document.getElementById('btn-sort-nearest');
+
+    if (btnSortLatest && btnSortNearest) {
+      const updateSortButtons = (mode) => {
+        if (mode === 'nearest') {
+          btnSortNearest.classList.add('active');
+          btnSortNearest.style.background = 'var(--primary)';
+          btnSortNearest.style.color = 'white';
+          btnSortLatest.classList.remove('active');
+          btnSortLatest.style.background = 'rgba(255, 255, 255, 0.04)';
+          btnSortLatest.style.color = 'var(--text-secondary)';
+        } else {
+          btnSortLatest.classList.add('active');
+          btnSortLatest.style.background = 'var(--primary)';
+          btnSortLatest.style.color = 'white';
+          btnSortNearest.classList.remove('active');
+          btnSortNearest.style.background = 'rgba(255, 255, 255, 0.04)';
+          btnSortNearest.style.color = 'var(--text-secondary)';
+        }
+      };
+
+      btnSortLatest.addEventListener('click', () => {
+        feedSortMode = 'latest';
+        updateSortButtons('latest');
+        renderFeedSection();
+      });
+
+      btnSortNearest.addEventListener('click', () => {
+        if (!currentUserLat || !currentUserLng) {
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                currentUserLat = pos.coords.latitude;
+                currentUserLng = pos.coords.longitude;
+                feedSortMode = 'nearest';
+                updateSortButtons('nearest');
+                renderFeedSection();
+              },
+              () => {
+                alert(getLanguage() === 'hi' ? 'कृपया "मेरे पास" के लिए जीपीएस स्थान सक्षम करें।' : 'Please enable GPS location to sort by nearest reports.');
+              }
+            );
+          } else {
+            alert('Geolocation not supported by browser.');
+          }
+        } else {
+          feedSortMode = 'nearest';
+          updateSortButtons('nearest');
+          renderFeedSection();
+        }
+      });
+    }
   }
 }
 
@@ -1510,25 +1690,49 @@ function setupLoginCanvas() {
   raf = requestAnimationFrame(draw);
 }
 
+let feedSortMode = 'latest';
+
+function getDistanceInKm(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Radius of the earth in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 function renderFeedSection() {
   if (!feedReportsContainer) return;
 
+  const incidentsLabel = allReports.length === 1 ? (getLanguage() === 'hi' ? 'घटना' : 'Incident') : (getLanguage() === 'hi' ? 'घटनाएं' : 'Incidents');
   if (feedReportsCount) {
-    feedReportsCount.textContent = `${allReports.length} ${allReports.length === 1 ? 'Incident' : 'Incidents'}`;
+    feedReportsCount.textContent = `${allReports.length} ${incidentsLabel}`;
   }
 
   if (allReports.length === 0) {
     feedReportsContainer.innerHTML = `
-      <p style="color: var(--text-muted); text-align: center; padding: 40px 0;">No community reports to show in the feed yet.</p>
+      <p style="color: var(--text-muted); text-align: center; padding: 40px 0;" data-i18n="noFeedReports">${t('noFeedReports')}</p>
     `;
     return;
   }
 
-  feedReportsContainer.innerHTML = allReports.map(rep => {
-    const statusText = rep.status === 'fixed' ? 'Solved' : rep.status === 'review' ? 'Under Review' : 'Reported';
+  let reportsToRender = [...allReports];
+  if (feedSortMode === 'nearest' && currentUserLat !== null && currentUserLng !== null) {
+    reportsToRender.sort((a, b) => {
+      const distA = getDistanceInKm(currentUserLat, currentUserLng, a.latitude, a.longitude);
+      const distB = getDistanceInKm(currentUserLat, currentUserLng, b.latitude, b.longitude);
+      return distA - distB;
+    });
+  }
+
+  feedReportsContainer.innerHTML = reportsToRender.map(rep => {
+    const statusText = rep.status === 'fixed' ? t('solvedOn') : rep.status === 'review' ? (getLanguage() === 'hi' ? 'समीक्षा के अधीन' : 'Under Review') : (getLanguage() === 'hi' ? 'दर्ज की गई' : 'Reported');
     const statusClass = rep.status;
 
-    const publishDate = new Date(rep.timestamp).toLocaleDateString('en-US', {
+    const publishDate = new Date(rep.timestamp).toLocaleDateString(getLanguage() === 'hi' ? 'hi-IN' : 'en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
@@ -1538,7 +1742,7 @@ function renderFeedSection() {
 
     let resolvedDateHTML = '';
     if (rep.status === 'fixed' && rep.solvedAt) {
-      const resolvedDate = new Date(rep.solvedAt).toLocaleDateString('en-US', {
+      const resolvedDate = new Date(rep.solvedAt).toLocaleDateString(getLanguage() === 'hi' ? 'hi-IN' : 'en-US', {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
@@ -1548,7 +1752,7 @@ function renderFeedSection() {
       resolvedDateHTML = `
         <div class="resolved-badge-banner" style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; margin-top: 10px; border-radius: 8px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); color: var(--accent); font-size: 0.8rem; font-weight: 700;">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          <span>Resolved on ${resolvedDate}</span>
+          <span>${t('solvedOn')} on ${resolvedDate}</span>
         </div>
       `;
     }
@@ -1558,11 +1762,11 @@ function renderFeedSection() {
       mediaHTML = `
         <div class="feed-media-comparison" style="margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
           <div class="media-side" style="position: relative;">
-            <span class="media-label before" style="position: absolute; top: 8px; left: 8px; z-index: 2; background: rgba(239, 68, 68, 0.85); color: white; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(4px);">BEFORE</span>
+            <span class="media-label before" style="position: absolute; top: 8px; left: 8px; z-index: 2; background: rgba(239, 68, 68, 0.85); color: white; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(4px);">${t('beforeLabel')}</span>
             <img src="${rep.photoUrl}" alt="Before incident" class="feed-media-img" style="width: 100%; height: 180px; object-fit: cover; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05);">
           </div>
           <div class="media-side" style="position: relative;">
-            <span class="media-label after" style="position: absolute; top: 8px; left: 8px; z-index: 2; background: rgba(16, 185, 129, 0.85); color: white; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(4px);">AFTER</span>
+            <span class="media-label after" style="position: absolute; top: 8px; left: 8px; z-index: 2; background: rgba(16, 185, 129, 0.85); color: white; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(4px);">${t('afterLabel')}</span>
             <img src="${rep.solvedPhotoUrl}" alt="After resolved" class="feed-media-img" style="width: 100%; height: 180px; object-fit: cover; border-radius: 10px; border: 1px solid rgba(16, 185, 129, 0.2);">
           </div>
         </div>
@@ -1595,16 +1799,23 @@ function renderFeedSection() {
 
     const commentsContainerHTML = `
       <div class="comments-section" data-id="${rep.id}" style="margin-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 16px;">
-        <div class="comments-title" style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 12px;">Comments (${(rep.comments || []).length})</div>
+        <div class="comments-title" style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 12px;">${t('comments')} (${(rep.comments || []).length})</div>
         <div class="comments-list" id="comments-list-${rep.id}" style="max-height: 200px; overflow-y: auto; margin-bottom: 12px; padding-right: 4px;">
-          ${commentsListHTML || '<p class="no-comments-text" style="font-size: 0.78rem; color: var(--text-muted); text-align: center; padding: 12px 0;">No comments yet. Start the conversation!</p>'}
+          ${commentsListHTML || `<p class="no-comments-text" style="font-size: 0.78rem; color: var(--text-muted); text-align: center; padding: 12px 0;">${t('noComments')}</p>`}
         </div>
         <form class="comment-form" data-id="${rep.id}" style="display: flex; gap: 8px;">
-          <input type="text" class="comment-input" placeholder="Write a comment..." required style="flex: 1; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px; font-size: 0.8rem; color: var(--text-primary); transition: all 0.2s;">
-          <button type="submit" class="btn btn-primary comment-submit-btn" style="padding: 8px 16px; font-size: 0.8rem; border-radius: 8px; border: none; cursor: pointer;">Post</button>
+          <input type="text" class="comment-input" placeholder="${t('writeComment')}" required style="flex: 1; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px; font-size: 0.8rem; color: var(--text-primary); transition: all 0.2s;">
+          <button type="submit" class="btn btn-primary comment-submit-btn" style="padding: 8px 16px; font-size: 0.8rem; border-radius: 8px; border: none; cursor: pointer;">${t('post')}</button>
         </form>
       </div>
     `;
+
+    // Distance Calculation Label
+    let distanceHTML = '';
+    if (currentUserLat !== null && currentUserLng !== null) {
+      const distance = getDistanceInKm(currentUserLat, currentUserLng, rep.latitude, rep.longitude);
+      distanceHTML = `<span style="font-size: 0.72rem; color: var(--accent); font-weight: 700; margin-right: 12px; display: inline-flex; align-items: center; gap: 3px;">📍 ${distance.toFixed(1)} km ${t('away')}</span>`;
+    }
 
     return `
       <div class="feed-card" id="feed-card-${rep.id}" style="background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 14px; transition: all var(--transition-normal); margin-bottom: 20px; width: 100%; box-sizing: border-box;">
@@ -1613,10 +1824,13 @@ function renderFeedSection() {
             <div class="feed-avatar" style="width: 32px; height: 32px; border-radius: 50%; background: rgba(0, 242, 254, 0.1); border: 1px solid var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--primary); font-size: 0.85rem;">${rep.username.charAt(0).toUpperCase()}</div>
             <div style="display: flex; flex-direction: column;">
               <span class="feed-username" style="font-size: 0.88rem; font-weight: 700; color: var(--text-primary);">@${rep.username}</span>
-              <span class="feed-date" style="font-size: 0.7rem; color: var(--text-muted);">Published ${publishDate}</span>
+              <span class="feed-date" style="font-size: 0.7rem; color: var(--text-muted);">${publishDate}</span>
             </div>
           </div>
-          <span class="status-pill ${statusClass}">${statusText}</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            ${distanceHTML}
+            <span class="status-pill ${statusClass}">${statusText}</span>
+          </div>
         </div>
 
         <div class="feed-card-body" style="display: flex; flex-direction: column; gap: 6px;">
@@ -1630,7 +1844,7 @@ function renderFeedSection() {
           <div style="display: flex; gap: 15px; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.03); padding-bottom: 8px;">
             <a href="#" class="report-location-feed" data-lat="${rep.latitude}" data-lng="${rep.longitude}" style="color: var(--primary); text-decoration: none; display: flex; align-items: center; gap: 4px; font-weight: 600;">
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              <span>Locate Radar Pin</span>
+              <span>${t('locateRadarPin')}</span>
             </a>
           </div>
           ${commentsContainerHTML}
@@ -1638,6 +1852,7 @@ function renderFeedSection() {
       </div>
     `;
   }).join('');
+
 
   // Attach comment submit event listeners
   document.querySelectorAll('.comment-form').forEach(form => {
@@ -1864,9 +2079,9 @@ function setupUserProfileModal() {
 setupUserProfileModal();
 
 /* =========================================================================
-   THEME TOGGLE INITIALIZATION
+   THEME & LANGUAGE INITIALIZATION
    ========================================================================= */
-function initTheme() {
+export function initTheme() {
   const themeToggle = document.getElementById('theme-toggle');
   if (!themeToggle) return;
 
@@ -1879,10 +2094,24 @@ function initTheme() {
     document.documentElement.classList.remove('light-theme');
   }
 
+  // Helper to swap the sun/moon icons
+  function updateIcons(isLight) {
+    const moonIcon = themeToggle.querySelector('.moon-icon');
+    const sunIcon = themeToggle.querySelector('.sun-icon');
+    if (moonIcon && sunIcon) {
+      moonIcon.style.display = isLight ? 'none' : 'block';
+      sunIcon.style.display = isLight ? 'block' : 'none';
+    }
+  }
+
+  // Set correct icon on first load
+  updateIcons(currentTheme === 'light');
+
   themeToggle.addEventListener('click', () => {
     const isLight = document.documentElement.classList.toggle('light-theme');
     const newTheme = isLight ? 'light' : 'dark';
     localStorage.setItem('theme', newTheme);
+    updateIcons(isLight);
   });
 
   // Enable keydown event for keyboard accessibility (role="button")
@@ -1892,4 +2121,53 @@ function initTheme() {
       themeToggle.click();
     }
   });
+}
+
+export function initLanguage() {
+  const langEnBtn = document.getElementById('lang-en-btn');
+  const langHiBtn = document.getElementById('lang-hi-btn');
+
+  const savedLang = getLanguage();
+  setLanguage(savedLang);
+  translatePage();
+
+  const updateLangButtons = (lang) => {
+    if (langEnBtn && langHiBtn) {
+      if (lang === 'hi') {
+        langHiBtn.classList.add('active');
+        langHiBtn.style.background = 'var(--primary)';
+        langHiBtn.style.color = 'white';
+        langEnBtn.classList.remove('active');
+        langEnBtn.style.background = 'rgba(255, 255, 255, 0.05)';
+        langEnBtn.style.color = 'var(--text-secondary)';
+      } else {
+        langEnBtn.classList.add('active');
+        langEnBtn.style.background = 'var(--primary)';
+        langEnBtn.style.color = 'white';
+        langHiBtn.classList.remove('active');
+        langHiBtn.style.background = 'rgba(255, 255, 255, 0.05)';
+        langHiBtn.style.color = 'var(--text-secondary)';
+      }
+    }
+  };
+
+  updateLangButtons(savedLang);
+
+  if (langEnBtn) {
+    langEnBtn.addEventListener('click', () => {
+      setLanguage('en');
+      updateLangButtons('en');
+      translatePage();
+      renderFeedSection();
+    });
+  }
+
+  if (langHiBtn) {
+    langHiBtn.addEventListener('click', () => {
+      setLanguage('hi');
+      updateLangButtons('hi');
+      translatePage();
+      renderFeedSection();
+    });
+  }
 }
