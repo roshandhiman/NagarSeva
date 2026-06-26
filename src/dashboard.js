@@ -100,6 +100,8 @@ setupLoginCanvas();
    ========================================================================= */
 
 async function checkSession() {
+  const loadingScreen = document.getElementById('app-loading-screen');
+
   try {
     const supaSession = await getCurrentSession();
     if (supaSession) {
@@ -113,6 +115,7 @@ async function checkSession() {
       localStorage.setItem('ch_session', JSON.stringify(session));
       loginWrapper.style.display = 'none';
       dashboardContainer.style.display = 'grid';
+      if (loadingScreen) loadingScreen.remove();
       initDashboard();
       return;
     }
@@ -125,10 +128,12 @@ async function checkSession() {
     session = JSON.parse(storedSession);
     loginWrapper.style.display = 'none';
     dashboardContainer.style.display = 'grid';
+    if (loadingScreen) loadingScreen.remove();
     initDashboard();
   } else {
     loginWrapper.style.display = 'flex';
     dashboardContainer.style.display = 'none';
+    if (loadingScreen) loadingScreen.remove();
     setupAuthHandlers();
   }
 }

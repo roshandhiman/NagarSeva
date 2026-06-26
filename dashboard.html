@@ -12,8 +12,15 @@
     <!-- Canvas Particle Background -->
     <canvas id="bg-canvas"></canvas>
 
+    <!-- ===================== LOADING SCREEN (shown while checking session) ===================== -->
+    <div id="app-loading-screen" style="position: fixed; inset: 0; z-index: 9999; background: #09090b; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; font-family: 'Outfit', sans-serif;">
+      <div style="font-size: 1.6rem; font-weight: 800; color: #fafafa; letter-spacing: -0.02em;">NagarSeva<span style="color: #00f2fe;">.</span></div>
+      <div style="width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.08); border-top-color: #00f2fe; border-radius: 50%; animation: app-spin 0.7s linear infinite;"></div>
+      <style>@keyframes app-spin { to { transform: rotate(360deg); } }</style>
+    </div>
+
     <!-- ===================== NOVA LOGIN FORM WRAPPER ===================== -->
-    <div class="login-wrapper" id="login-wrapper">
+    <div class="login-wrapper" id="login-wrapper" style="display: none;">
       <!-- Ambient Orbs matching landing page -->
       <div class="login-orb login-orb-1"></div>
       <div class="login-orb login-orb-2"></div>
