@@ -8,6 +8,9 @@ import { initChatbot, setChatReports, checkDuplicateReport } from './ai.js';
 // Initialize custom cursor on this page
 initCursor();
 
+// Initialize theme toggling
+initTheme();
+
 // Fix Leaflet marker path assets
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -1439,7 +1442,7 @@ function setupConstellationBackground() {
   function animate() {
     ctx.clearRect(0, 0, width, height);
 
-    ctx.fillStyle = '#030303';
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg-dark').trim() || '#030303';
     ctx.fillRect(0, 0, width, height);
 
     particles.forEach(p => {
@@ -1859,3 +1862,34 @@ function setupUserProfileModal() {
 }
 
 setupUserProfileModal();
+
+/* =========================================================================
+   THEME TOGGLE INITIALIZATION
+   ========================================================================= */
+function initTheme() {
+  const themeToggle = document.getElementById('theme-toggle');
+  if (!themeToggle) return;
+
+  // Read saved theme or default to dark (since project is dark themed by default)
+  const currentTheme = localStorage.getItem('theme') || 'dark';
+  
+  if (currentTheme === 'light') {
+    document.documentElement.classList.add('light-theme');
+  } else {
+    document.documentElement.classList.remove('light-theme');
+  }
+
+  themeToggle.addEventListener('click', () => {
+    const isLight = document.documentElement.classList.toggle('light-theme');
+    const newTheme = isLight ? 'light' : 'dark';
+    localStorage.setItem('theme', newTheme);
+  });
+
+  // Enable keydown event for keyboard accessibility (role="button")
+  themeToggle.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      themeToggle.click();
+    }
+  });
+}

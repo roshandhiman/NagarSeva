@@ -3333,3 +3333,304 @@ footer {
     right: 16px;
   }
 }
+
+/* ============================================================
+   LIGHT THEME OVERRIDES (Vibrant & Premium Slate theme)
+   ============================================================ */
+html.light-theme {
+  --bg-dark: #f8fafc; /* Nice slate-50 canvas background */
+  --bg-card: #ffffff; /* Solid white cards */
+  --bg-card-hover: #f1f5f9; /* Slate-100 hover state */
+  --border-color: #e2e8f0; /* Slate-200 subtle borders */
+  --border-color-glow: rgba(255, 107, 74, 0.2);
+  
+  --primary: #FF6B4A; /* Keep brand signature vibrant orange */
+  --primary-glow: rgba(255, 107, 74, 0.15);
+  --secondary: #6d28d9; /* Deep violet for readability */
+  --secondary-glow: rgba(109, 40, 217, 0.15);
+  --accent: #059669; /* Emerald 600 for contrast */
+  --accent-glow: rgba(5, 150, 105, 0.15);
+  --warning: #dc2626;
+  
+  --text-primary: #0f172a; /* Slate 900 */
+  --text-secondary: #334155; /* Slate 700 */
+  --text-muted: #64748b; /* Slate 500 */
+}
+
+/* Light Theme Grid Pattern Override */
+html.light-theme body::before {
+  background-image: radial-gradient(rgba(15, 23, 42, 0.04) 1px, transparent 1px);
+}
+
+/* Light Mode Card Styling & Shadows */
+html.light-theme .user-card, 
+html.light-theme .dashboard-card,
+html.light-theme .report-card, 
+html.light-theme .leaderboard-item,
+html.light-theme .public-feed-card,
+html.light-theme .comments-section,
+html.light-theme .quick-actions-card,
+html.light-theme .incident-radar-card,
+html.light-theme .stat-card,
+html.light-theme .card,
+html.light-theme .admin-report-card {
+  background: #ffffff !important;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 4px -1px rgba(15, 23, 42, 0.03);
+  border: 1px solid #e2e8f0 !important;
+}
+
+/* Specific elements background adjustments */
+html.light-theme .sidebar {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-right: 1px solid #e2e8f0 !important;
+  box-shadow: 4px 0 30px rgba(0, 0, 0, 0.02);
+}
+
+html.light-theme .user-avatar {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+html.light-theme .sidebar-nav li a {
+  color: #475569 !important;
+}
+
+html.light-theme .sidebar-nav li.active a {
+  background: rgba(255, 107, 74, 0.08) !important;
+  color: var(--primary) !important;
+}
+
+html.light-theme .sidebar-nav li a:hover {
+  background: #f1f5f9 !important;
+}
+
+/* Light mode support for modals */
+html.light-theme .modal-content {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.15) !important;
+  color: #0f172a !important;
+}
+
+html.light-theme .modal-header h2 {
+  color: #0f172a !important;
+}
+
+/* Inputs & Form styling in Light Theme */
+html.light-theme input,
+html.light-theme select,
+html.light-theme textarea {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+html.light-theme input:focus,
+html.light-theme select:focus,
+html.light-theme textarea:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 74, 0.15) !important;
+}
+
+/* Map specific tweaks in Light Mode */
+html.light-theme #map {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+}
+
+html.light-theme .leaflet-container {
+  background: #f1f5f9 !important;
+}
+
+html.light-theme .leaflet-tile-container img {
+  filter: none !important; /* Normal colorful street maps! */
+}
+
+/* Chatbot (NagBot) Light Theme Override */
+html.light-theme .nagbot-window {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12) !important;
+}
+
+html.light-theme .nagbot-header {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html.light-theme .nagbot-header-title {
+  color: #0f172a !important;
+}
+
+html.light-theme .nagbot-body {
+  background: #ffffff !important;
+}
+
+html.light-theme .nagbot-msg-bot {
+  background: #f1f5f9 !important;
+  color: #1e293b !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+html.light-theme .nagbot-msg-user {
+  background: var(--primary) !important;
+  color: #ffffff !important;
+}
+
+html.light-theme .nagbot-input-container {
+  background: #f8fafc !important;
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+html.light-theme .nagbot-input {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+html.light-theme .nagbot-quick-btn {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #475569 !important;
+}
+
+html.light-theme .nagbot-quick-btn:hover {
+  background: #f1f5f9 !important;
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+}
+
+html.light-theme .nagbot-trigger-btn {
+  box-shadow: 0 10px 30px rgba(255, 107, 74, 0.3) !important;
+}
+
+/* Other UI specific fixes */
+html.light-theme .stat-card .stat-value {
+  color: #0f172a !important;
+}
+
+html.light-theme .report-badge {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+}
+
+html.light-theme .tab-btn {
+  color: #475569 !important;
+  background: #f1f5f9 !important;
+}
+
+html.light-theme .tab-btn.active {
+  background: var(--primary) !important;
+  color: #ffffff !important;
+}
+
+html.light-theme .btn-ghost {
+  color: #475569 !important;
+}
+
+html.light-theme .btn-ghost:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+html.light-theme .leaderboard-item .rank-number {
+  color: #0f172a !important;
+}
+
+html.light-theme .comments-section {
+  background: #f8fafc !important;
+}
+
+html.light-theme .comment-item {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+/* ============================================================
+   THEME TOGGLE STYLING
+   ============================================================ */
+.theme-toggle-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  margin-bottom: 8px;
+  transition: all var(--transition-fast);
+}
+
+html.light-theme .theme-toggle-container {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: #e2e8f0;
+}
+
+.theme-toggle-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-family: var(--font-heading);
+}
+
+.theme-toggle-btn {
+  width: 52px;
+  height: 28px;
+  background: #09090b;
+  border: 1px solid #27272a;
+  border-radius: 50px;
+  padding: 3px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-toggle-track {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.theme-toggle-thumb {
+  width: 20px;
+  height: 20px;
+  background: #27272a;
+  border-radius: 50%;
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #fafafa;
+}
+
+.theme-icon {
+  width: 11px;
+  height: 11px;
+}
+
+html.light-theme .theme-toggle-btn {
+  background: #ffffff;
+  border-color: #cbd5e1;
+}
+
+html.light-theme .theme-toggle-thumb {
+  transform: translateX(24px);
+  background: #f1f5f9;
+  color: #f59e0b; /* Sunny amber */
+}
+
+/* Light Theme Loading Screen Override */
+html.light-theme #app-loading-screen {
+  background: #f8fafc !important;
+}
+
+html.light-theme #app-loading-screen div {
+  color: #0f172a !important;
+}
+
+
