@@ -434,3 +434,33 @@ function simulateImageAnalysis(base64Data) {
   });
 }
 
+export async function transcribeAudio(audioBlob, languageCode) {
+  if (!GROQ_API_KEY) throw new Error('VITE_GROQ_API_KEY not set in .env');
+
+  const formData = new FormData();
+  // Groq Whisper expects a file with an extension, e.g. webm
+  formData.append('file', audioBlob, 'recording.webm');
+  formData.append('model', 'whisper-large-v3');
+
+  if (languageCode) {
+    const langShort = languageCode.split('-')[0].toLowerCase(); // e.g. hi-IN -> hi, en-US -> en
+    formData.append('language', langShort);
+  }
+
+  const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${GROQ_API_KEY}`,
+    },
+    body: formData
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Whisper API error ${res.status}`);
+  }
+
+  const data = await res.json();
+  return data.text;
+}
+

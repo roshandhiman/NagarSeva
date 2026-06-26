@@ -3,7 +3,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { supabase, useSupabase, getUserProfile, getLeaderboard, getReports, submitReport, updateReportStatus, signIn, signUp, signOut, getCurrentSession, signInWithGoogle, ensureUserProfile, addReportComment, updateUserProfile } from './api.js';
 import { initCursor } from './cursor.js';
-import { initChatbot, setChatReports, checkDuplicateReport, analyzeImage } from './ai.js';
+import { initChatbot, setChatReports, checkDuplicateReport, analyzeImage, transcribeAudio } from './ai.js';
 import { t, translatePage, setLanguage, getLanguage } from './i18n.js';
 
 // Initialize custom cursor on this page
@@ -1330,72 +1330,262 @@ function setupEventListeners() {
   let recognition = null;
   let activeTargetInput = null;
 
-  if (SpeechRecognition) {
-    recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    
-    recognition.onstart = () => {
-      if (voiceStatusAlert) {
-        voiceStatusAlert.style.display = 'flex';
-        const curLang = getLanguage();
-        voiceStatusText.textContent = curLang === 'hi' ? '🎤 सुन रहा हूँ... अब बोलें' : '🎤 Listening... Speak now';
-      }
-    };
+  // Local MediaRecorder variables for Whisper speech-to-text
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let isRecordingLocal = false;
 
-    recognition.onerror = (e) => {
-      console.warn('Speech recognition error:', e.error);
-      if (voiceStatusAlert) voiceStatusAlert.style.display = 'none';
-    };
-
-    recognition.onend = () => {
-      if (voiceStatusAlert) voiceStatusAlert.style.display = 'none';
-      activeTargetInput = null;
-    };
-
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      if (activeTargetInput) {
-        const currentVal = activeTargetInput.value.trim();
-        activeTargetInput.value = currentVal ? `${currentVal} ${transcript}` : transcript;
-        activeTargetInput.style.borderColor = 'var(--primary)';
-        const target = activeTargetInput;
-        setTimeout(() => target.style.borderColor = '', 2000);
-      }
-    };
-
-    const handleMicClick = (targetInput) => {
-      if (activeTargetInput === targetInput) {
-        recognition.stop();
-      } else {
-        recognition.stop();
-        activeTargetInput = targetInput;
-        const curLang = getLanguage();
-        recognition.lang = curLang === 'hi' ? 'hi-IN' : 'en-US';
-        try {
-          recognition.start();
-        } catch (e) {
-          console.warn('Speech recognition start failed:', e);
-        }
-      }
-    };
-
+  const resetButtonUI = () => {
     if (micBtnTitle) {
-      micBtnTitle.addEventListener('click', () => {
-        const titleInput = document.getElementById('report-title');
-        handleMicClick(titleInput);
-      });
+      micBtnTitle.style.color = 'var(--text-muted)';
+      micBtnTitle.style.transform = '';
+    }
+    if (micBtnDesc) {
+      micBtnDesc.style.color = 'var(--text-muted)';
+      micBtnDesc.style.transform = '';
+    }
+  };
+
+  const startLocalRecording = async (targetInput) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunks = [];
+      mediaRecorder = new MediaRecorder(stream);
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunks.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        // Stop all audio tracks to release microphone device promptly
+        stream.getTracks().forEach(track => track.stop());
+        
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        
+        if (voiceStatusAlert && voiceStatusText) {
+          voiceStatusAlert.style.display = 'flex';
+          voiceStatusAlert.style.borderColor = 'rgba(255, 107, 74, 0.2)';
+          voiceStatusAlert.style.background = 'rgba(255, 107, 74, 0.08)';
+          voiceStatusText.textContent = getLanguage() === 'hi' ? '🤖 AI अनुवाद कर रहा हूँ...' : '🤖 AI is transcribing...';
+        }
+        
+        try {
+          const curLang = getLanguage() === 'hi' ? 'hi-IN' : 'en-US';
+          const text = await transcribeAudio(audioBlob, curLang);
+          if (text && text.trim()) {
+            const currentVal = targetInput.value.trim();
+            targetInput.value = currentVal ? `${currentVal} ${text}` : text;
+            
+            // Highlight border on completion
+            targetInput.style.borderColor = 'var(--primary)';
+            setTimeout(() => targetInput.style.borderColor = '', 2000);
+          }
+          if (voiceStatusAlert) voiceStatusAlert.style.display = 'none';
+        } catch (err) {
+          console.error('Whisper transcription failed:', err);
+          if (voiceStatusAlert && voiceStatusText) {
+            voiceStatusText.textContent = getLanguage() === 'hi' ? '⚠️ अनुवाद विफल रहा' : '⚠️ Transcription failed';
+            setTimeout(() => {
+              voiceStatusAlert.style.display = 'none';
+            }, 3000);
+          }
+        } finally {
+          resetButtonUI();
+          activeTargetInput = null;
+          isRecordingLocal = false;
+        }
+      };
+
+      mediaRecorder.start();
+      isRecordingLocal = true;
+      activeTargetInput = targetInput;
+
+      // Highlight the active mic button
+      const currentMicBtn = targetInput.id === 'report-title' ? micBtnTitle : micBtnDesc;
+      if (currentMicBtn) {
+        currentMicBtn.style.color = 'var(--primary)';
+        currentMicBtn.style.transform = 'scale(1.2)';
+      }
+
+      if (voiceStatusAlert && voiceStatusText) {
+        voiceStatusAlert.style.display = 'flex';
+        voiceStatusAlert.style.borderColor = 'rgba(255, 107, 74, 0.2)';
+        voiceStatusAlert.style.background = 'rgba(255, 107, 74, 0.08)';
+        voiceStatusText.textContent = getLanguage() === 'hi' ? '🎤 सुन रहा हूँ (AI)... अब बोलें' : '🎤 Listening (AI)... Speak now';
+      }
+
+    } catch (err) {
+      console.error('Failed to start local recording:', err);
+      if (voiceStatusAlert && voiceStatusText) {
+        voiceStatusText.textContent = getLanguage() === 'hi' ? '⚠️ माइक एक्सेस विफल' : '⚠️ Mic access failed';
+        setTimeout(() => {
+          voiceStatusAlert.style.display = 'none';
+        }, 3000);
+      }
+      resetButtonUI();
+      activeTargetInput = null;
+      isRecordingLocal = false;
+    }
+  };
+
+  const stopLocalRecording = () => {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+    }
+  };
+
+  const handleMicClick = (targetInput) => {
+    // If local Whisper recording is active, click again to stop
+    if (isRecordingLocal) {
+      if (activeTargetInput === targetInput) {
+        stopLocalRecording();
+      } else {
+        stopLocalRecording();
+        setTimeout(() => {
+          startLocalRecording(targetInput);
+        }, 300);
+      }
+      return;
     }
 
-    if (micBtnDesc) {
-      micBtnDesc.addEventListener('click', () => {
-        const descInput = document.getElementById('report-desc');
-        handleMicClick(descInput);
-      });
+    // Try standard Web Speech API first
+    if (SpeechRecognition) {
+      if (activeTargetInput === targetInput) {
+        if (recognition) {
+          recognition.stop();
+        }
+        return;
+      }
+
+      if (recognition) {
+        try {
+          recognition.stop();
+        } catch (err) {}
+      }
+
+      activeTargetInput = targetInput;
+      resetButtonUI();
+
+      // Highlight the mic button
+      const currentMicBtn = targetInput.id === 'report-title' ? micBtnTitle : micBtnDesc;
+      if (currentMicBtn) {
+        currentMicBtn.style.color = 'var(--primary)';
+        currentMicBtn.style.transform = 'scale(1.2)';
+      }
+
+      recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = false;
+
+      const curLang = getLanguage();
+      recognition.lang = curLang === 'hi' ? 'hi-IN' : 'en-US';
+
+      recognition.onstart = () => {
+        if (voiceStatusAlert && voiceStatusText) {
+          voiceStatusAlert.style.display = 'flex';
+          voiceStatusAlert.style.borderColor = 'rgba(255, 107, 74, 0.2)';
+          voiceStatusAlert.style.background = 'rgba(255, 107, 74, 0.08)';
+          voiceStatusText.textContent = curLang === 'hi' ? '🎤 सुन रहा हूँ... अब बोलें' : '🎤 Listening... Speak now';
+        }
+      };
+
+      recognition.onerror = (e) => {
+        console.warn('Speech recognition error:', e.error);
+        
+        // If Brave shields block Google's speech recognition network calls, it reports a 'network' error.
+        // We catch it immediately and fall back to local MediaRecorder + Groq Whisper.
+        if (e.error === 'network') {
+          console.log('Switching to local MediaRecorder + Groq Whisper fallback due to network block.');
+          if (recognition) {
+            try { recognition.abort(); } catch (err) {}
+          }
+          startLocalRecording(targetInput);
+          return;
+        }
+
+        if (voiceStatusAlert && voiceStatusText) {
+          let errMsg = 'Speech error';
+          if (e.error === 'no-speech') {
+            errMsg = curLang === 'hi' ? '⚠️ कोई आवाज़ नहीं सुनी गई' : '⚠️ No speech detected';
+          } else if (e.error === 'not-allowed') {
+            errMsg = curLang === 'hi' ? '⚠️ माइक की अनुमति नहीं है' : '⚠️ Microphone permission denied';
+          } else {
+            errMsg = `⚠️ Error: ${e.error}`;
+          }
+          
+          voiceStatusText.textContent = errMsg;
+          voiceStatusAlert.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+          voiceStatusAlert.style.background = 'rgba(239, 68, 68, 0.1)';
+          
+          setTimeout(() => {
+            if (activeTargetInput === targetInput) {
+              voiceStatusAlert.style.display = 'none';
+              resetButtonUI();
+              activeTargetInput = null;
+            }
+          }, 3000);
+        } else {
+          resetButtonUI();
+          activeTargetInput = null;
+        }
+      };
+
+      recognition.onend = () => {
+        if (activeTargetInput === targetInput) {
+          if (voiceStatusAlert && voiceStatusText && !voiceStatusText.textContent.startsWith('⚠️')) {
+            voiceStatusAlert.style.display = 'none';
+          }
+          resetButtonUI();
+          activeTargetInput = null;
+        }
+      };
+
+      recognition.onresult = (event) => {
+        const resultIndex = event.resultIndex;
+        const transcript = event.results[resultIndex][0].transcript;
+        
+        if (activeTargetInput === targetInput) {
+          const currentVal = activeTargetInput.value.trim();
+          activeTargetInput.value = currentVal ? `${currentVal} ${transcript}` : transcript;
+          
+          activeTargetInput.style.borderColor = 'var(--primary)';
+          const target = activeTargetInput;
+          setTimeout(() => target.style.borderColor = '', 2000);
+
+          recognition.stop();
+        }
+      };
+
+      try {
+        recognition.start();
+      } catch (err) {
+        console.warn('Speech recognition start failed, using Whisper fallback:', err);
+        startLocalRecording(targetInput);
+      }
+    } else {
+      // Fallback directly to Whisper if SpeechRecognition is entirely unsupported
+      startLocalRecording(targetInput);
     }
-  } else {
-    if (micBtnTitle) micBtnTitle.style.display = 'none';
-    if (micBtnDesc) micBtnDesc.style.display = 'none';
+  };
+
+  if (micBtnTitle) {
+    micBtnTitle.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const titleInput = document.getElementById('report-title');
+      handleMicClick(titleInput);
+    });
+  }
+
+  if (micBtnDesc) {
+    micBtnDesc.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const descInput = document.getElementById('report-desc');
+      handleMicClick(descInput);
+    });
   }
 
   // --- Feed Sorting Event Listeners ---
