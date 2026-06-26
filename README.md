@@ -28,9 +28,11 @@
 > **NagarSeva** (नगरसेवा — *"Service to the City"*) is a full-stack civic engagement platform that bridges the gap between citizens and municipal authorities. Citizens can geo-tag and report infrastructure problems like potholes, garbage pile-ups, and water leakages — while administrators track, review, and resolve issues in real-time through a dedicated command center.
 
 ---
-
+ ###ADMIN LOGIN
+ - **User - admin
+ - **Pass - admin
+---
 ## ✨ Features
-
 ### 🌓 Premium Appearance Theme Toggle
 - **Light & Dark Themes**: Switch seamlessly between a high-tech dark mode and a crisp slate-based light mode with optimized readability.
 - **Responsive Animations**: Toggle button features custom transitions, animates icons, and changes layout properties smoothly.
