@@ -1319,6 +1319,139 @@ function setupEventListeners() {
       handleNavigation(item.id);
     });
   });
+
+  // --- Voice Reporting Event Listeners ---
+  const micBtnTitle = document.getElementById('mic-btn-title');
+  const micBtnDesc = document.getElementById('mic-btn-desc');
+  const voiceStatusAlert = document.getElementById('voice-status-alert');
+  const voiceStatusText = document.getElementById('voice-status-text');
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition = null;
+  let activeTargetInput = null;
+
+  if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    
+    recognition.onstart = () => {
+      if (voiceStatusAlert) {
+        voiceStatusAlert.style.display = 'flex';
+        const curLang = getLanguage();
+        voiceStatusText.textContent = curLang === 'hi' ? '🎤 सुन रहा हूँ... अब बोलें' : '🎤 Listening... Speak now';
+      }
+    };
+
+    recognition.onerror = (e) => {
+      console.warn('Speech recognition error:', e.error);
+      if (voiceStatusAlert) voiceStatusAlert.style.display = 'none';
+    };
+
+    recognition.onend = () => {
+      if (voiceStatusAlert) voiceStatusAlert.style.display = 'none';
+      activeTargetInput = null;
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      if (activeTargetInput) {
+        const currentVal = activeTargetInput.value.trim();
+        activeTargetInput.value = currentVal ? `${currentVal} ${transcript}` : transcript;
+        activeTargetInput.style.borderColor = 'var(--primary)';
+        const target = activeTargetInput;
+        setTimeout(() => target.style.borderColor = '', 2000);
+      }
+    };
+
+    const handleMicClick = (targetInput) => {
+      if (activeTargetInput === targetInput) {
+        recognition.stop();
+      } else {
+        recognition.stop();
+        activeTargetInput = targetInput;
+        const curLang = getLanguage();
+        recognition.lang = curLang === 'hi' ? 'hi-IN' : 'en-US';
+        try {
+          recognition.start();
+        } catch (e) {
+          console.warn('Speech recognition start failed:', e);
+        }
+      }
+    };
+
+    if (micBtnTitle) {
+      micBtnTitle.addEventListener('click', () => {
+        const titleInput = document.getElementById('report-title');
+        handleMicClick(titleInput);
+      });
+    }
+
+    if (micBtnDesc) {
+      micBtnDesc.addEventListener('click', () => {
+        const descInput = document.getElementById('report-desc');
+        handleMicClick(descInput);
+      });
+    }
+  } else {
+    if (micBtnTitle) micBtnTitle.style.display = 'none';
+    if (micBtnDesc) micBtnDesc.style.display = 'none';
+  }
+
+  // --- Feed Sorting Event Listeners ---
+  const btnSortLatest = document.getElementById('btn-sort-latest');
+  const btnSortNearest = document.getElementById('btn-sort-nearest');
+
+  if (btnSortLatest && btnSortNearest) {
+    const updateSortButtons = (mode) => {
+      if (mode === 'nearest') {
+        btnSortNearest.classList.add('active');
+        btnSortNearest.style.background = 'var(--primary)';
+        btnSortNearest.style.color = 'white';
+        btnSortLatest.classList.remove('active');
+        btnSortLatest.style.background = 'rgba(255, 255, 255, 0.04)';
+        btnSortLatest.style.color = 'var(--text-secondary)';
+      } else {
+        btnSortLatest.classList.add('active');
+        btnSortLatest.style.background = 'var(--primary)';
+        btnSortLatest.style.color = 'white';
+        btnSortNearest.classList.remove('active');
+        btnSortNearest.style.background = 'rgba(255, 255, 255, 0.04)';
+        btnSortNearest.style.color = 'var(--text-secondary)';
+      }
+    };
+
+    btnSortLatest.addEventListener('click', () => {
+      feedSortMode = 'latest';
+      updateSortButtons('latest');
+      renderFeedSection();
+    });
+
+    btnSortNearest.addEventListener('click', () => {
+      if (!currentUserLat || !currentUserLng) {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              currentUserLat = pos.coords.latitude;
+              currentUserLng = pos.coords.longitude;
+              feedSortMode = 'nearest';
+              updateSortButtons('nearest');
+              renderFeedSection();
+            },
+            () => {
+              alert(getLanguage() === 'hi' ? 'कृपया "मेरे पास" के लिए जीपीएस स्थान सक्षम करें।' : 'Please enable GPS location to sort by nearest reports.');
+            }
+          );
+        } else {
+          alert('Geolocation not supported by browser.');
+        }
+      } else {
+        feedSortMode = 'nearest';
+        updateSortButtons('nearest');
+        renderFeedSection();
+      }
+    });
+  }
 }
 
 function handleNavigation(targetId) {
@@ -1396,139 +1529,6 @@ function handleNavigation(targetId) {
       setTimeout(() => {
         map.invalidateSize();
       }, 100);
-    }
-
-    // --- Voice Reporting Event Listeners ---
-    const micBtnTitle = document.getElementById('mic-btn-title');
-    const micBtnDesc = document.getElementById('mic-btn-desc');
-    const voiceStatusAlert = document.getElementById('voice-status-alert');
-    const voiceStatusText = document.getElementById('voice-status-text');
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    let recognition = null;
-    let activeTargetInput = null;
-
-    if (SpeechRecognition) {
-      recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      
-      recognition.onstart = () => {
-        if (voiceStatusAlert) {
-          voiceStatusAlert.style.display = 'flex';
-          const curLang = getLanguage();
-          voiceStatusText.textContent = curLang === 'hi' ? '🎤 सुन रहा हूँ... अब बोलें' : '🎤 Listening... Speak now';
-        }
-      };
-
-      recognition.onerror = (e) => {
-        console.warn('Speech recognition error:', e.error);
-        if (voiceStatusAlert) voiceStatusAlert.style.display = 'none';
-      };
-
-      recognition.onend = () => {
-        if (voiceStatusAlert) voiceStatusAlert.style.display = 'none';
-        activeTargetInput = null;
-      };
-
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        if (activeTargetInput) {
-          const currentVal = activeTargetInput.value.trim();
-          activeTargetInput.value = currentVal ? `${currentVal} ${transcript}` : transcript;
-          activeTargetInput.style.borderColor = 'var(--primary)';
-          const target = activeTargetInput;
-          setTimeout(() => target.style.borderColor = '', 2000);
-        }
-      };
-
-      const handleMicClick = (targetInput) => {
-        if (activeTargetInput === targetInput) {
-          recognition.stop();
-        } else {
-          recognition.stop();
-          activeTargetInput = targetInput;
-          const curLang = getLanguage();
-          recognition.lang = curLang === 'hi' ? 'hi-IN' : 'en-US';
-          try {
-            recognition.start();
-          } catch (e) {
-            console.warn('Speech recognition start failed:', e);
-          }
-        }
-      };
-
-      if (micBtnTitle) {
-        micBtnTitle.addEventListener('click', () => {
-          const titleInput = document.getElementById('report-title');
-          handleMicClick(titleInput);
-        });
-      }
-
-      if (micBtnDesc) {
-        micBtnDesc.addEventListener('click', () => {
-          const descInput = document.getElementById('report-desc');
-          handleMicClick(descInput);
-        });
-      }
-    } else {
-      if (micBtnTitle) micBtnTitle.style.display = 'none';
-      if (micBtnDesc) micBtnDesc.style.display = 'none';
-    }
-
-    // --- Feed Sorting Event Listeners ---
-    const btnSortLatest = document.getElementById('btn-sort-latest');
-    const btnSortNearest = document.getElementById('btn-sort-nearest');
-
-    if (btnSortLatest && btnSortNearest) {
-      const updateSortButtons = (mode) => {
-        if (mode === 'nearest') {
-          btnSortNearest.classList.add('active');
-          btnSortNearest.style.background = 'var(--primary)';
-          btnSortNearest.style.color = 'white';
-          btnSortLatest.classList.remove('active');
-          btnSortLatest.style.background = 'rgba(255, 255, 255, 0.04)';
-          btnSortLatest.style.color = 'var(--text-secondary)';
-        } else {
-          btnSortLatest.classList.add('active');
-          btnSortLatest.style.background = 'var(--primary)';
-          btnSortLatest.style.color = 'white';
-          btnSortNearest.classList.remove('active');
-          btnSortNearest.style.background = 'rgba(255, 255, 255, 0.04)';
-          btnSortNearest.style.color = 'var(--text-secondary)';
-        }
-      };
-
-      btnSortLatest.addEventListener('click', () => {
-        feedSortMode = 'latest';
-        updateSortButtons('latest');
-        renderFeedSection();
-      });
-
-      btnSortNearest.addEventListener('click', () => {
-        if (!currentUserLat || !currentUserLng) {
-          if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-              (pos) => {
-                currentUserLat = pos.coords.latitude;
-                currentUserLng = pos.coords.longitude;
-                feedSortMode = 'nearest';
-                updateSortButtons('nearest');
-                renderFeedSection();
-              },
-              () => {
-                alert(getLanguage() === 'hi' ? 'कृपया "मेरे पास" के लिए जीपीएस स्थान सक्षम करें।' : 'Please enable GPS location to sort by nearest reports.');
-              }
-            );
-          } else {
-            alert('Geolocation not supported by browser.');
-          }
-        } else {
-          feedSortMode = 'nearest';
-          updateSortButtons('nearest');
-          renderFeedSection();
-        }
-      });
     }
   }
 }
