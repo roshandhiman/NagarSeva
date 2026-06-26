@@ -31,6 +31,12 @@
 
 ## ✨ Features
 
+### 🌓 Premium Appearance Theme Toggle
+- **Light & Dark Themes**: Switch seamlessly between a high-tech dark mode and a crisp slate-based light mode with optimized readability.
+- **Responsive Animations**: Toggle button features custom transitions, animates icons, and changes layout properties smoothly.
+- **Theme-Aware Canvas & Maps**: Map tiles restore colorful street maps in light mode, and canvas particles change background color dynamically using computed properties.
+- **Zero Flash Load**: Embeds inline checks to load the user's preferred theme instantly before the DOM displays, preventing flashes.
+
 ### 🤖 NagBot AI Assistant (Groq-Powered)
 - **Strict Personal Report Tracker**: A secure AI chatbot strictly scoped to the logged-in user's own reports.
 - **Natural Language Interaction**: Users can ask NagBot about their active, resolved, or under-review reports in plain English.
@@ -38,10 +44,25 @@
 - **Secure & Focused**: Politely refuses off-topic queries (coding, general knowledge, or other users' reports) to keep users focused on civic resolutions.
 - **Ultra-Fast Performance**: Driven by the lightning-fast **Groq Cloud API** running `llama-3.1-8b-instant`.
 
-### 🔁 Real-Time Duplicate Report Detection
-- **Smart Geo-Analysis**: Automatically analyzes reports within a 2km radius when a citizen drafts a new report.
-- **AI Matching Engine**: Groq checks the new report's description, title, and category against nearby records.
-- **Interactive Warn Banner**: Displays a floating alert banner on the report form if a duplicate is found, allowing citizens to check the existing report instead of creating clutter.
+### ✨ AI Image Vision Analysis (Groq Llama 3.2 Vision)
+- **Auto-Fill Details**: Uploading an image inside the reporting modal instantly triggers vision analysis.
+- **Intelligent Classification**: Powered by `llama-3.2-11b-vision-preview` to detect issue categories (potholes, garbage, leakages, or hazards).
+- **Pothole/Puddle Smart Rule**: Special prompts ensure rainwater puddles or muddy craters in roads are correctly flagged as *potholes* rather than pipe *leakages*.
+- **Visual Highlight**: Smooth green-glowing animation indicates auto-completed select boxes, titles, and descriptions.
+
+### 🎙️ Web Speech Voice Reporting
+- **On-the-Fly Speech Dictation**: Microphones added next to Title and Description inputs allow hands-free reporting.
+- **Pulsating Recording Status**: Live banner notifications (`Listening... Speak now` / `सुन रहा हूँ... अब बोलें`) keep user informed.
+- **Bilingual Dictation**: Adapts to the active interface language (English or Hindi Speech Engine).
+
+### 🌐 Multilingual English & Hindi Support (i18n)
+- **Instant Switcher**: Seamless switcher in the sidebar navigation header (EN / हिंदी).
+- **Full Localization**: Translates headings, form labels, selects, feedback banners, placeholers, and bot states dynamically without reloading.
+
+### 📍 "Near Me" GPS Proximity Sorting
+- **Distance-Based Filtering**: Toggle feed sorting between `Latest` and `Near Me`.
+- **Haversine Distance Mapping**: Pinpoints citizen GPS position to calculate physical proximity in real-time.
+- **Proximity Badges**: Attaches a clean mileage tag (e.g. `📍 0.4 km away` / `📍 0.4 km दूर`) on activity cards.
 
 ### 🗺️ Interactive GPS-Powered Map
 - Auto-locates the user on load and centers the Leaflet map on their GPS coordinates.
@@ -59,37 +80,9 @@
 - Traditional **Email / Username + Password** login & signup.
 - Session persistence via `localStorage` with automatic role detection.
 
-### 🛡️ Municipal Command Center (Admin Portal)
-- Dedicated admin dashboard to review all citizen-submitted reports.
-- Status workflow: **Reported** → **Under Review** → **Resolved** with one-click transitions.
-- Admin can add resolution comments and attach **fix verification photos** to resolved issues.
-- Admin credentials: `admin` / `admin` (for local development).
-
-### 🏆 Gamified Leaderboard & Badges
-| Action | Points |
-|---|---|
-| Submit a report | +50 pts |
-| Issue resolved | +100 pts |
-
-- Badge tiers: **First Responder** → **Street Sentinel** → **Municipal Magnet** → **City Champion**
-- Live leaderboard with animated rank cards.
-
-### 👤 Citizen Profiles
-- View any user's profile by clicking their name on the public feed.
-- Profile modal shows username, bio, level, points, earned badges, and their submitted reports.
-- Editable profile section for authenticated users.
-
-### 📰 Public Activity Feed
-- Chronological stream of all civic reports across the platform.
-- Smart deduplication — no repeated reports from the same user.
-- Each card shows: title, type, description, photo, status badge, reporter name, and timestamp.
-
-### 🎨 Premium Aesthetic
-- Vibrant dark-mode interface with glassmorphic cards and glowing borders.
-- Interactive particle constellation background (`<canvas>` powered).
-- Custom cursor follower with magnetic hover effects.
-- Micro-animations, smooth transitions, and scroll-reveal effects.
-- Typography powered by **Google Fonts** (Inter + Outfit).
+### 🛡️ Command Center & Profiles
+- Admin portal with status workflow: **Reported** → **Under Review** → **Resolved** with comments and fix verification photos.
+- User profile modals listing citizen level, points, badges, bio, and all submitted reports.
 
 ---
 
