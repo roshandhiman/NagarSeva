@@ -1099,24 +1099,55 @@ function setupEventListeners() {
               const categorySelect = document.getElementById('report-type');
               const titleInput = document.getElementById('report-title');
               const descTextarea = document.getElementById('report-desc');
+              const feedbackSpan = feedbackBanner ? feedbackBanner.querySelector('span') : null;
 
-              if (aiResult.category && categorySelect) {
-                categorySelect.value = aiResult.category;
-                categorySelect.style.borderColor = 'var(--accent)';
-                setTimeout(() => categorySelect.style.borderColor = '', 2000);
-              }
-              if (aiResult.title && titleInput) {
-                titleInput.value = aiResult.title;
-                titleInput.style.borderColor = 'var(--accent)';
-                setTimeout(() => titleInput.style.borderColor = '', 2000);
-              }
-              if (aiResult.description && descTextarea) {
-                descTextarea.value = aiResult.description;
-                descTextarea.style.borderColor = 'var(--accent)';
-                setTimeout(() => descTextarea.style.borderColor = '', 2000);
-              }
+              if (aiResult.error) {
+                if (feedbackBanner) {
+                  feedbackBanner.style.display = 'flex';
+                  feedbackBanner.style.background = 'rgba(239, 68, 68, 0.08)';
+                  feedbackBanner.style.borderColor = 'rgba(239, 68, 68, 0.2)';
+                  feedbackBanner.style.color = '#ef4444';
+                  const svgEl = feedbackBanner.querySelector('svg');
+                  if (svgEl) {
+                    svgEl.innerHTML = '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>';
+                    svgEl.setAttribute('viewBox', '0 0 24 24');
+                    svgEl.setAttribute('stroke', 'currentColor');
+                  }
+                  if (feedbackSpan) {
+                    feedbackSpan.textContent = getLanguage() === 'hi' ? '⚠️ AI विश्लेषण विफल रहा। कृपया विवरण स्वयं भरें।' : '⚠️ AI analysis failed. Please fill details manually.';
+                  }
+                }
+              } else {
+                if (aiResult.category && categorySelect) {
+                  categorySelect.value = aiResult.category;
+                  categorySelect.style.borderColor = 'var(--accent)';
+                  setTimeout(() => categorySelect.style.borderColor = '', 2000);
+                }
+                if (aiResult.title && titleInput) {
+                  titleInput.value = aiResult.title;
+                  titleInput.style.borderColor = 'var(--accent)';
+                  setTimeout(() => titleInput.style.borderColor = '', 2000);
+                }
+                if (aiResult.description && descTextarea) {
+                  descTextarea.value = aiResult.description;
+                  descTextarea.style.borderColor = 'var(--accent)';
+                  setTimeout(() => descTextarea.style.borderColor = '', 2000);
+                }
 
-              if (feedbackBanner) feedbackBanner.style.display = 'flex';
+                if (feedbackBanner) {
+                  feedbackBanner.style.display = 'flex';
+                  feedbackBanner.style.background = '';
+                  feedbackBanner.style.borderColor = '';
+                  feedbackBanner.style.color = '';
+                  const svgEl = feedbackBanner.querySelector('svg');
+                  if (svgEl) {
+                    svgEl.innerHTML = '<polyline points="20 6 9 17 4 12"></polyline>';
+                  }
+                  if (feedbackSpan) {
+                    feedbackSpan.textContent = getLanguage() === 'hi' ? '✅ AI ने आपकी छवि से श्रेणियां और विवरण स्वतः भर दिए हैं!' : '✅ AI auto-filled categories and details from your image!';
+                  }
+                }
+              }
             }
           } catch (err) {
             console.error('Image analysis error:', err);

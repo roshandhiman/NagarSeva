@@ -346,6 +346,46 @@ export function initChatbot() {
   }
 }
 
+// Helper to downscale and compress base64 images client-side before sending to Vision LLM
+function compressImageBase64(base64Str, maxWidth = 800, maxHeight = 800) {
+  return new Promise((resolve) => {
+    const imgSrc = base64Str.startsWith('data:') ? base64Str : `data:image/jpeg;base64,${base64Str}`;
+    const img = new Image();
+    img.src = imgSrc;
+    img.onload = () => {
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height) {
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Export as a compressed JPEG (0.7 quality) to reduce file size significantly
+      const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+      resolve(compressedDataUrl.split(',')[1]); // return raw base64
+    };
+    img.onerror = (err) => {
+      console.warn('Image loading for compression failed, using original base64:', err);
+      resolve(base64Str.split(',')[1] || base64Str);
+    };
+  });
+}
+
 // ── 4. AI IMAGE VISION ANALYSIS ───────────────────────────
 export async function analyzeImage(base64Data) {
   if (!GROQ_API_KEY) {
@@ -353,43 +393,43 @@ export async function analyzeImage(base64Data) {
     return simulateImageAnalysis(base64Data);
   }
 
-  // Remove the prefix data:image/...;base64, if it exists
-  const rawBase64 = base64Data.split(',')[1] || base64Data;
+  try {
+    // Compress/resize the image to max 800px to ensure tiny payload size & fast upload
+    const rawBase64 = await compressImageBase64(base64Data);
 
-  const messages = [
-    {
-      role: 'system',
-      content: `You are an expert civic AI analyzer for NagarSeva. Analyze the provided image of a civic issue.
+    const messages = [
+      {
+        role: 'system',
+        content: `You are an expert civic AI analyzer for NagarSeva. Analyze the provided image of a civic issue.
 Determine the issue category, which must be strictly one of these four: "pothole", "garbage", "leakage", "hazard".
 
 CRITICAL CLASSIFICATION RULES:
-- "pothole": A hole, crack, crater, or damage in the street road/asphalt surface or sidewalk. Note: A road pothole often accumulates rainwater or mud, forming a puddle. If it is a road hole containing water, it is STILL a "pothole". Do NOT classify it as "leakage".
+- "pothole": A hole, crack, crater, depression, or damage in the street road/asphalt surface, pavement, or sidewalk. Note: A road pothole often accumulates rainwater or mud, forming a puddle or crater. If it is a road hole containing water or mud, it is STILL a "pothole". Do NOT classify it as "leakage".
 - "leakage": Active running/spraying water, sewage overflow, or flooding originating from a burst pipe, leak, or utility line.
 - "garbage": Accumulations of trash, dumps, waste piles, or debris.
 - "hazard": Dangerous setups like exposed/hanging electric wires, structural damage, fallen poles/trees, or missing manhole covers.
 
 Provide a short summary title (max 5 words) and a brief description (1-2 sentences) of what you see.
-Respond ONLY in this exact JSON format (no markdown blocks, no formatting outside JSON, just raw JSON):
+Respond ONLY in this exact JSON format (no markdown blocks, no conversational preamble, just raw JSON):
 {"category": "pothole/garbage/leakage/hazard", "title": "brief summary", "description": "brief description"}`
-    },
-    {
-      role: 'user',
-      content: [
-        {
-          type: 'text',
-          text: 'Categorize and describe the civic issue shown in this image.'
-        },
-        {
-          type: 'image_url',
-          image_url: {
-            url: `data:image/jpeg;base64,${rawBase64}`
+      },
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: 'Categorize and describe the civic issue shown in this image.'
+          },
+          {
+            type: 'image_url',
+            image_url: {
+              url: `data:image/jpeg;base64,${rawBase64}`
+            }
           }
-        }
-      ]
-    }
-  ];
+        ]
+      }
+    ];
 
-  try {
     const res = await fetch(GROQ_URL, {
       method: 'POST',
       headers: {
@@ -397,22 +437,30 @@ Respond ONLY in this exact JSON format (no markdown blocks, no formatting outsid
         'Authorization': `Bearer ${GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'llama-3.2-11b-vision-preview',
+        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
         messages,
         max_tokens: 300,
-        temperature: 0.2
+        temperature: 0.1
       }),
     });
+
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err?.error?.message || `Groq API error ${res.status}`);
     }
+
     const data = await res.json();
     const raw = data.choices[0].message.content.trim();
-    const clean = raw.replace(/```json?/g, '').replace(/```/g, '').trim();
-    return JSON.parse(clean);
+    
+    // Safely extract JSON block
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+    
+    throw new Error('No valid JSON block found in AI response: ' + raw);
   } catch (e) {
-    console.warn('AI Image Analysis failed, using simulated analysis fallback:', e);
+    console.error('AI Image Analysis failed, using simulated analysis fallback:', e);
     return simulateImageAnalysis(base64Data);
   }
 }
@@ -427,7 +475,6 @@ function simulateImageAnalysis(base64Data) {
         { category: "leakage", title: "Burst Water Line Leakage", description: "Water leaking steadily onto the pavement from a damaged underground water pipe." },
         { category: "hazard", title: "Exposed Electrical Wiring", description: "Exposed utility wires hanging low over the public walkway, posing an immediate hazard." }
       ];
-      // Pick one randomly
       const selected = fallbacks[Math.floor(Math.random() * fallbacks.length)];
       resolve(selected);
     }, 1500);
